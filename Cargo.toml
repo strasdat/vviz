@@ -1,0 +1,23 @@
+[package]
+description = "Rapid prototyping GUI, and visual printf-style debugging for computer vision development"
+edition = "2021"
+name = "vviz"
+version = "0.0.1"
+license = "MIT OR Apache-2.0"
+keywords = ["gui", "graphics", "computervision", "vision"]
+repository = "https://github.com/strasdat/vviz/"
+readme = "README.md"
+
+[dependencies] 
+downcast-rs = "1.2.0"
+egui = "0.16.0"
+egui-miniquad = "0.8.0"
+linked-hash-map = "0.5.4"
+miniquad = { version = "=0.3.0-alpha.43" }
+static_assertions = "1.1.0"
+slice-of-array = "0.3.1"
+enum-as-inner = "0.3.3"
+nalgebra = "0.29.0"
+nalgebra-glm = "0.15.0"
+strum = "0.23"
+strum_macros = "0.23.1"
