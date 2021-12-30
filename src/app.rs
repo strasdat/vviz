@@ -19,9 +19,8 @@ impl App {
         let (to_gui_loop_sender, to_gui_loop_receiver) = std::sync::mpsc::channel();
         self.to_gui_loop_receiver = Some(to_gui_loop_receiver);
 
-        let (from_gui_loop_sender,from_gui_loop_receiver) = std::sync::mpsc::channel();
+        let (from_gui_loop_sender, from_gui_loop_receiver) = std::sync::mpsc::channel();
         self.from_gui_loop_sender = Some(from_gui_loop_sender);
-
 
         std::thread::spawn(move || {
             let manager = manager::Manager::new(to_gui_loop_sender, from_gui_loop_receiver);
@@ -37,7 +36,11 @@ impl App {
         };
         miniquad::start(conf, |mut ctx| {
             miniquad::UserData::owning(
-                gui::GuiLoop::new(&mut ctx, self.to_gui_loop_receiver.unwrap(), self.from_gui_loop_sender.unwrap()),
+                gui::GuiLoop::new(
+                    &mut ctx,
+                    self.to_gui_loop_receiver.unwrap(),
+                    self.from_gui_loop_sender.unwrap(),
+                ),
                 ctx,
             )
         });
@@ -45,6 +48,6 @@ impl App {
 }
 
 pub fn spawn(f: fn(manager::Manager) -> ()) {
-    let my_gui = App::new();
-    my_gui.spawn(f)
+    let vviz = App::new();
+    vviz.spawn(f)
 }
