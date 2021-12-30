@@ -58,7 +58,7 @@ pub struct UpdateRangedValue<T> {
     pub value: T,
 }
 
-pub trait Numbers: egui::emath::Numeric + downcast_rs::DowncastSync {}
+pub trait Numbers: egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display {}
 
 impl Numbers for i32 {}
 impl Numbers for i64 {}
@@ -149,6 +149,17 @@ impl Component for Var<bool> {
     }
 }
 
+impl<T: Numbers> Component for Var<T> {
+    fn show(
+        &mut self,
+        label: &str,
+        ui: &mut egui::Ui,
+        _sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+    ) {
+        ui.label(format!("{}: {}", label, self.value));
+    }
+}
+
 pub struct RangedVar<T> {
     pub value: T,
     pub min: T,
@@ -207,6 +218,13 @@ impl ToGuiLoopMessage for AddVar<bool> {
     fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Var::<bool> { value: self.value }));
+    }
+}
+
+impl<T: Numbers> ToGuiLoopMessage for AddVar<T> {
+    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
+        data.components
+            .insert(self.label, Box::new(Var::<T> { value: self.value }));
     }
 }
 

@@ -19,6 +19,7 @@ fn main() {
         let mut ui_counter = manager.add_ranged_i32("counter".to_string(), 5, -50, 50);
         let opt: Options = Options::Daz;
         let mut ui_options = manager.add_enum("options".to_string(), opt);
+        let _ui_int64 = manager.add_i64("const int".to_string(), 42);
 
         let w3d = manager.add_widget3("w3d".to_string());
         w3d.place_entity_at(

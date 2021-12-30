@@ -170,6 +170,58 @@ impl UiVar<bool> {
     }
 }
 
+impl<T: common::Numbers> UiVar<T> {
+    pub fn new(stuff: Rc<RefCell<Stuff>>, label: String, value: T) -> Self {
+        stuff
+            .borrow_mut()
+            .message_queue
+            .push_back(Box::new(common::AddVar::<T> {
+                label: label.clone(),
+                value,
+            }));
+        stuff
+            .borrow_mut()
+            .components
+            .insert(label.clone(), Box::new(common::Var::<T> { value }));
+        Self {
+            stuff,
+            label,
+            cache: value,
+        }
+    }
+
+    pub fn get_value(&mut self) -> T {
+        let value = self
+            .stuff
+            .borrow()
+            .components
+            .get(&self.label)
+            .unwrap()
+            .downcast_ref::<common::Var<T>>()
+            .unwrap()
+            .value;
+        self.cache = value;
+        value
+    }
+
+    pub fn get_new_value(&mut self) -> Option<T> {
+        let value = self
+            .stuff
+            .borrow()
+            .components
+            .get(&self.label)
+            .unwrap()
+            .downcast_ref::<common::Var<T>>()
+            .unwrap()
+            .value;
+        if value != self.cache {
+            self.cache = value;
+            return Some(value);
+        }
+        None
+    }
+}
+
 pub struct UiRangedVar<T> {
     pub stuff: Rc<RefCell<Stuff>>,
     label: String,
@@ -295,6 +347,22 @@ impl Manager {
 
     pub fn add_bool(&self, label: String, value: bool) -> UiVar<bool> {
         UiVar::<bool>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_i32(&self, label: String, value: i32) -> UiVar<i32> {
+        UiVar::<i32>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_i64(&self, label: String, value: i64) -> UiVar<i64> {
+        UiVar::<i64>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_f32(&self, label: String, value: f32) -> UiVar<f32> {
+        UiVar::<f32>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_f64(&self, label: String, value: f64) -> UiVar<f64> {
+        UiVar::<f64>::new(self.stuff.clone(), label, value)
     }
 
     pub fn add_ranged_i32(
