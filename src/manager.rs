@@ -112,6 +112,50 @@ impl<
     }
 }
 
+pub struct UiButton {
+    pub stuff: Rc<RefCell<Stuff>>,
+    label: String,
+}
+
+impl UiButton {
+    pub fn new(stuff: Rc<RefCell<Stuff>>, label: String) -> Self {
+        stuff
+            .borrow_mut()
+            .message_queue
+            .push_back(Box::new(common::AddButton {
+                label: label.clone(),
+            }));
+        stuff
+            .borrow_mut()
+            .components
+            .insert(label.clone(), Box::new(common::Button { pressed: false }));
+        Self { stuff, label }
+    }
+
+    pub fn was_pressed(&mut self) -> bool {
+        let pressed = self
+            .stuff
+            .borrow()
+            .components
+            .get(&self.label)
+            .unwrap()
+            .downcast_ref::<common::Button>()
+            .unwrap()
+            .pressed;
+        if pressed {
+            self.stuff
+                .borrow_mut()
+                .components
+                .get_mut(&self.label)
+                .unwrap()
+                .downcast_mut::<common::Button>()
+                .unwrap()
+                .pressed = false;
+        }
+        pressed
+    }
+}
+
 pub struct UiVar<T> {
     pub stuff: Rc<RefCell<Stuff>>,
     label: String,
@@ -160,6 +204,58 @@ impl UiVar<bool> {
             .get(&self.label)
             .unwrap()
             .downcast_ref::<common::Var<bool>>()
+            .unwrap()
+            .value;
+        if value != self.cache {
+            self.cache = value;
+            return Some(value);
+        }
+        None
+    }
+}
+
+impl<T: common::Numbers> UiVar<T> {
+    pub fn new(stuff: Rc<RefCell<Stuff>>, label: String, value: T) -> Self {
+        stuff
+            .borrow_mut()
+            .message_queue
+            .push_back(Box::new(common::AddVar::<T> {
+                label: label.clone(),
+                value,
+            }));
+        stuff
+            .borrow_mut()
+            .components
+            .insert(label.clone(), Box::new(common::Var::<T> { value }));
+        Self {
+            stuff,
+            label,
+            cache: value,
+        }
+    }
+
+    pub fn get_value(&mut self) -> T {
+        let value = self
+            .stuff
+            .borrow()
+            .components
+            .get(&self.label)
+            .unwrap()
+            .downcast_ref::<common::Var<T>>()
+            .unwrap()
+            .value;
+        self.cache = value;
+        value
+    }
+
+    pub fn get_new_value(&mut self) -> Option<T> {
+        let value = self
+            .stuff
+            .borrow()
+            .components
+            .get(&self.label)
+            .unwrap()
+            .downcast_ref::<common::Var<T>>()
             .unwrap()
             .value;
         if value != self.cache {
@@ -293,8 +389,28 @@ impl Manager {
         }
     }
 
+    pub fn add_button(&self, label: String) -> UiButton {
+        UiButton::new(self.stuff.clone(), label)
+    }
+
     pub fn add_bool(&self, label: String, value: bool) -> UiVar<bool> {
         UiVar::<bool>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_i32(&self, label: String, value: i32) -> UiVar<i32> {
+        UiVar::<i32>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_i64(&self, label: String, value: i64) -> UiVar<i64> {
+        UiVar::<i64>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_f32(&self, label: String, value: f32) -> UiVar<f32> {
+        UiVar::<f32>::new(self.stuff.clone(), label, value)
+    }
+
+    pub fn add_f64(&self, label: String, value: f64) -> UiVar<f64> {
+        UiVar::<f64>::new(self.stuff.clone(), label, value)
     }
 
     pub fn add_ranged_i32(
