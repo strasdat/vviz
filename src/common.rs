@@ -1,97 +1,13 @@
-#![allow(dead_code)]
+//! Common structures shared between manager and gui loop.
+
+use super::entities;
+use super::gui;
 
 use ::slice_of_array::prelude::*;
-use enum_as_inner::EnumAsInner;
 
-pub struct GuiData {
-    pub components: linked_hash_map::LinkedHashMap<String, Box<dyn Component>>,
-    pub widgets: linked_hash_map::LinkedHashMap<String, Box<dyn Widget>>,
-}
-
-impl GuiData {
-    pub fn default() -> Self {
-        Self {
-            components: linked_hash_map::LinkedHashMap::new(),
-            widgets: linked_hash_map::LinkedHashMap::new(),
-        }
-    }
-}
-
-pub trait FromGuiLoopMessage: Send {
-    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>);
-}
-
-pub struct UpdateEnumStringRepr {
-    pub label: String,
-    pub value: String,
-}
-
-impl FromGuiLoopMessage for UpdateEnumStringRepr {
-    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
-        components
-            .get_mut(&self.label)
-            .unwrap()
-            .downcast_mut::<EnumStringRepr>()
-            .unwrap()
-            .value = self.value.clone();
-    }
-}
-
-pub struct UpdateValue<T> {
-    pub label: String,
-    pub value: T,
-}
-
-impl FromGuiLoopMessage for UpdateValue<bool> {
-    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
-        components
-            .get_mut(&self.label)
-            .unwrap()
-            .downcast_mut::<Var<bool>>()
-            .unwrap()
-            .value = self.value;
-    }
-}
-
-pub struct UpdateButton {
-    pub label: String,
-}
-
-impl FromGuiLoopMessage for UpdateButton {
-    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
-        components
-            .get_mut(&self.label)
-            .unwrap()
-            .downcast_mut::<Button>()
-            .unwrap()
-            .pressed = true;
-    }
-}
-
-pub struct UpdateRangedValue<T> {
-    pub label: String,
-    pub value: T,
-}
-
-pub trait Numbers: egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display {}
-
-impl Numbers for i32 {}
-impl Numbers for i64 {}
-impl Numbers for f32 {}
-impl Numbers for f64 {}
-
-impl<T: Numbers> FromGuiLoopMessage for UpdateRangedValue<T> {
-    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
-        components
-            .get_mut(&self.label)
-            .unwrap()
-            .downcast_mut::<RangedVar<T>>()
-            .unwrap()
-            .value = self.value;
-    }
-}
-
+/// Component such as a button or a slider.
 pub trait Component: downcast_rs::DowncastSync {
+    /// How to display the component on the side panel.
     fn show(
         &mut self,
         label: &str,
@@ -108,8 +24,11 @@ impl core::fmt::Debug for dyn Component {
 
 downcast_rs::impl_downcast!(sync Component);
 
+/// String representation of enum.
 pub struct EnumStringRepr {
+    /// String representation of the current value.
     pub value: String,
+    /// All possible values.
     pub values: std::vec::Vec<String>,
 }
 
@@ -142,7 +61,9 @@ impl Component for EnumStringRepr {
     }
 }
 
+/// Variable bool (checkbox) or numeric (read-only text box).
 pub struct Var<T> {
+    /// Current value.
     pub value: T,
 }
 
@@ -164,7 +85,9 @@ impl Component for Var<bool> {
     }
 }
 
+/// A button.
 pub struct Button {
+    /// Is true is recently pressed.
     pub pressed: bool,
 }
 
@@ -185,7 +108,7 @@ impl Component for Button {
     }
 }
 
-impl<T: Numbers> Component for Var<T> {
+impl<T: Number> Component for Var<T> {
     fn show(
         &mut self,
         label: &str,
@@ -196,13 +119,17 @@ impl<T: Numbers> Component for Var<T> {
     }
 }
 
+/// A range value, represented as slider.
 pub struct RangedVar<T> {
+    /// Current value.
     pub value: T,
+    /// Min bound.
     pub min: T,
+    /// Max bound.
     pub max: T,
 }
 
-impl<T: Numbers> Component for RangedVar<T> {
+impl<T: Number> Component for RangedVar<T> {
     fn show(
         &mut self,
         label: &str,
@@ -223,101 +150,12 @@ impl<T: Numbers> Component for RangedVar<T> {
     }
 }
 
-pub trait ToGuiLoopMessage: Send {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, ctx: &mut miniquad::Context);
-}
-
-pub struct AddEnumStringRepr {
-    pub label: String,
-    pub value: String,
-    pub values: std::vec::Vec<String>,
-}
-
-impl ToGuiLoopMessage for AddEnumStringRepr {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
-        data.components.insert(
-            self.label,
-            Box::new(EnumStringRepr {
-                value: self.value,
-                values: self.values,
-            }),
-        );
-    }
-}
-
-pub struct AddButton {
-    pub label: String,
-}
-
-impl ToGuiLoopMessage for AddButton {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
-        data.components
-            .insert(self.label, Box::new(Button { pressed: false }));
-    }
-}
-
-pub struct AddVar<T> {
-    pub label: String,
-    pub value: T,
-}
-
-impl ToGuiLoopMessage for AddVar<bool> {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
-        data.components
-            .insert(self.label, Box::new(Var::<bool> { value: self.value }));
-    }
-}
-
-impl<T: Numbers> ToGuiLoopMessage for AddVar<T> {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
-        data.components
-            .insert(self.label, Box::new(Var::<T> { value: self.value }));
-    }
-}
-
-pub struct AddRangedVar<T> {
-    pub label: String,
-    pub value: T,
-    pub min: T,
-    pub max: T,
-}
-
-impl<T: Numbers> ToGuiLoopMessage for AddRangedVar<T> {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
-        data.components.insert(
-            self.label,
-            Box::new(RangedVar::<T> {
-                value: self.value,
-                min: self.min,
-                max: self.max,
-            }),
-        );
-    }
-}
-
-pub struct AddWidget3 {
-    pub label: String,
-}
-
-impl ToGuiLoopMessage for AddWidget3 {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, ctx: &mut miniquad::Context) {
-        data.widgets.insert(self.label, Box::new(Widget3::new(ctx)));
-    }
-}
-
-pub struct DeleteComponent {
-    pub label: String,
-}
-
-impl ToGuiLoopMessage for DeleteComponent {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
-        data.components.remove(&self.label);
-    }
-}
-
+/// Widget for main panel.
 pub trait Widget: downcast_rs::DowncastSync {
+    /// How to render.
     fn render(&mut self, ctx: &mut miniquad::Context);
 
+    /// How to display the rendered content.
     fn show(
         &mut self,
         ui: &mut egui::Ui,
@@ -325,6 +163,7 @@ pub trait Widget: downcast_rs::DowncastSync {
         assigned_height: f32,
     ) -> Option<egui::Response>;
 
+    /// The apect ratio of the
     fn aspect_ratio(&self) -> f32;
 }
 
@@ -368,8 +207,9 @@ mod offscreen_shader {
     }
 }
 
+/// Widget for 3d content such as meshes, line segments and point clouds.
 pub struct Widget3 {
-    pub entities: linked_hash_map::LinkedHashMap<String, NamedEntity3>,
+    entities: linked_hash_map::LinkedHashMap<String, entities::NamedEntity3>,
     offscreen_pipeline: miniquad::Pipeline,
     //offscreen_bind: miniquad::Bindings,
     offscreen_pass: miniquad::RenderPass,
@@ -536,164 +376,126 @@ impl Widget for Widget3 {
     }
 }
 
-#[repr(C)]
-pub struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-    pub alpha: f32,
+/// Integer or floating point number.
+
+pub trait Number: egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display {}
+
+impl Number for i32 {}
+impl Number for i64 {}
+impl Number for f32 {}
+impl Number for f64 {}
+
+/// Message from  `Manager` to `GuiLoop`, such as to add a component or widget.
+pub trait ToGuiLoopMessage: Send {
+    /// How that component or widget shall be displayed.
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context);
 }
 
-struct PositionColorVertices {
-    vertices: std::vec::Vec<[f32; 7]>,
-}
-
-impl PositionColorVertices {
-    fn to_array(position: nalgebra::Vector3<f32>, color: Color) -> [f32; 7] {
-        [
-            position.x,
-            position.y,
-            position.z,
-            color.r,
-            color.g,
-            color.b,
-            color.alpha,
-        ]
-    }
-}
-
-#[repr(C)]
-struct PositionUvVertices {
-    vertices: std::vec::Vec<[f32; 5]>,
-}
-
-impl PositionUvVertices {
-    fn to_array(position: nalgebra::Vector3<f32>, uv: nalgebra::Vector2<f32>) -> [f32; 5] {
-        [position.x, position.y, position.z, uv.x, uv.y]
-    }
-}
-
-pub struct Texture {}
-
-struct PositionUvVerticesAndTexture {
-    vertices: PositionUvVertices,
-    texture: Texture,
-}
-
-#[derive(EnumAsInner)]
-enum Vertices {
-    PositionColor(PositionColorVertices),
-    PositionUvAndTexture(PositionUvVerticesAndTexture),
-}
-
-pub struct Entity3 {
-    vertices: Vertices,
-    faces: Faces,
-}
-
-pub struct NamedEntity3 {
+/// Add an enum (as string representation) as combo box to side panel.
+pub struct AddEnumStringRepr {
+    /// The name of the enum.
     pub label: String,
-    pub entity: Entity3,
-    pub scene_pose_entity: nalgebra::Isometry3<f32>,
+    /// Initial value.
+    pub value: String,
+    /// List of possible values.
+    pub values: std::vec::Vec<String>,
 }
 
-impl Entity3 {
-    fn from_position_color_vertices_and_faces(
-        vertices: PositionColorVertices,
-        faces: Faces,
-    ) -> Self {
-        Self {
-            vertices: Vertices::PositionColor(vertices),
-            faces,
-        }
-    }
-
-    fn from_position_uv_vertices_texture_and_faces(
-        vertices: PositionUvVertices,
-        texture: Texture,
-        faces: Faces,
-    ) -> Self {
-        Self {
-            vertices: Vertices::PositionUvAndTexture(PositionUvVerticesAndTexture {
-                vertices,
-                texture,
+impl ToGuiLoopMessage for AddEnumStringRepr {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        data.components.insert(
+            self.label,
+            Box::new(EnumStringRepr {
+                value: self.value,
+                values: self.values,
             }),
-            faces,
-        }
+        );
     }
 }
 
-#[repr(C)]
-
-pub struct Faces {
-    indices: std::vec::Vec<[i16; 3]>,
+/// To add a button to side panel.
+pub struct AddButton {
+    /// The name of button.
+    pub label: String,
 }
 
-impl Faces {
-    fn new(indices: std::vec::Vec<[i16; 3]>) -> Self {
-        Self { indices }
+impl ToGuiLoopMessage for AddButton {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        data.components
+            .insert(self.label, Box::new(Button { pressed: false }));
     }
 }
 
-pub fn colored_cube(scale: f32) -> Entity3 {
-    #[rustfmt::skip]
-    let vertices = PositionColorVertices{vertices: vec![
-       [-scale, -scale, -scale,    1.0, 0.5, 0.5, 1.0],
-       [ scale, -scale, -scale,    1.0, 0.5, 0.5, 1.0],
-       [ scale,  scale, -scale,    1.0, 0.5, 0.5, 1.0],
-       [-scale,  scale, -scale,    1.0, 0.5, 0.5, 1.0],
-
-       [-scale, -scale,  scale,    0.5, 1.0, 0.5, 1.0],
-       [ scale, -scale,  scale,    0.5, 1.0, 0.5, 1.0],
-       [ scale,  scale,  scale,    0.5, 1.0, 0.5, 1.0],
-       [-scale,  scale,  scale,    0.5, 1.0, 0.5, 1.0],
-  
-       [-scale, -scale, -scale,    0.5, 0.5, 1.0, 1.0],
-       [-scale,  scale, -scale,    0.5, 0.5, 1.0, 1.0],
-       [-scale,  scale,  scale,    0.5, 0.5, 1.0, 1.0],
-       [-scale, -scale,  scale,    0.5, 0.5, 1.0, 1.0],
-  
-       [ scale, -scale, -scale,    1.0, 0.5, 0.0, 1.0],
-       [ scale,  scale, -scale,    1.0, 0.5, 0.0, 1.0],
-       [ scale,  scale,  scale,    1.0, 0.5, 0.0, 1.0],
-       [ scale, -scale,  scale,    1.0, 0.5, 0.0, 1.0],
-       
-       [-scale, -scale, -scale,    0.0, 0.5, 1.0, 1.0],
-       [-scale, -scale,  scale,    0.0, 0.5, 1.0, 1.0],
-       [ scale, -scale,  scale,    0.0, 0.5, 1.0, 1.0],
-       [ scale, -scale, -scale,    0.0, 0.5, 1.0, 1.0],
-         
-       [-scale,  scale, -scale,    1.0, 0.0, 0.5, 1.0],
-       [-scale,  scale,  scale,    1.0, 0.0, 0.5, 1.0],
-       [ scale,  scale,  scale,    1.0, 0.0, 0.5, 1.0],
-       [ scale,  scale, -scale,    1.0, 0.0, 0.5, 1.0],
-    ]};
-
-    let faces = Faces::new(vec![
-        [0, 1, 2],
-        [0, 2, 3],
-        [6, 5, 4],
-        [7, 6, 4],
-        [8, 9, 10],
-        [8, 10, 11],
-        [14, 13, 12],
-        [15, 14, 12],
-        [16, 17, 18],
-        [16, 18, 19],
-        [22, 21, 20],
-        [23, 22, 20],
-    ]);
-
-    Entity3::from_position_color_vertices_and_faces(vertices, faces)
+/// Add bool (as checkbox) or numeric value (ad read-only text box) to side panel.
+pub struct AddVar<T> {
+    /// The name of variable.
+    pub label: String,
+    /// The initial value.
+    pub value: T,
 }
 
+impl ToGuiLoopMessage for AddVar<bool> {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        data.components
+            .insert(self.label, Box::new(Var::<bool> { value: self.value }));
+    }
+}
+
+impl<T: Number> ToGuiLoopMessage for AddVar<T> {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        data.components
+            .insert(self.label, Box::new(Var::<T> { value: self.value }));
+    }
+}
+
+/// Add a numeric value as a slider to side panel.
+
+pub struct AddRangedVar<T> {
+    /// Name of variable.
+    pub label: String,
+    /// Initial value.
+    pub value: T,
+    /// Min bounds
+    pub min: T,
+    /// Max bounds
+    pub max: T,
+}
+
+impl<T: Number> ToGuiLoopMessage for AddRangedVar<T> {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        data.components.insert(
+            self.label,
+            Box::new(RangedVar::<T> {
+                value: self.value,
+                min: self.min,
+                max: self.max,
+            }),
+        );
+    }
+}
+
+/// Adds 3d widget to main panel.
+pub struct AddWidget3 {
+    /// Name of widget
+    pub label: String,
+}
+
+impl ToGuiLoopMessage for AddWidget3 {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+        data.widgets.insert(self.label, Box::new(Widget3::new(ctx)));
+    }
+}
+
+/// Place3d  entity in corresponding 3d widget.
 pub struct PlaceEntity {
+    /// Name of widget.
     pub widget_label: String,
-    pub named_entity: NamedEntity3,
+    /// The 3d entity
+    pub named_entity: entities::NamedEntity3,
 }
 
 impl ToGuiLoopMessage for PlaceEntity {
-    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.widgets
             .get_mut(&self.widget_label)
             .unwrap()
@@ -704,40 +506,95 @@ impl ToGuiLoopMessage for PlaceEntity {
     }
 }
 
-pub struct ColoredTriangle {
-    pub face: [[f32; 3]; 3],
-    pub color: Color,
+/// Delete that component from side panel.
+pub struct DeleteComponent {
+    /// Name/identifier of component
+    pub label: String,
 }
 
-impl ColoredTriangle {
-    fn vec_of_arrays(vec_of_triangles: &[ColoredTriangle]) -> std::vec::Vec<[f32; 7]> {
-        let mut result = std::vec::Vec::<[f32; 7]>::with_capacity(3 * vec_of_triangles.len());
-        for triangle in vec_of_triangles {
-            for vertex in triangle.face {
-                result.push([
-                    vertex[0],
-                    vertex[1],
-                    vertex[2],
-                    triangle.color.r,
-                    triangle.color.g,
-                    triangle.color.b,
-                    triangle.color.alpha,
-                ])
-            }
-        }
-        result
+impl ToGuiLoopMessage for DeleteComponent {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        data.components.remove(&self.label);
     }
 }
 
-pub fn colored_triangles(triangles: std::vec::Vec<ColoredTriangle>) -> Entity3 {
-    let vertices = PositionColorVertices {
-        vertices: ColoredTriangle::vec_of_arrays(&triangles),
-    };
-    let mut faces: Vec<[i16; 3]> = std::vec::Vec::new();
+/// Message from `GuiLoop` to `Manager`.
+pub trait FromGuiLoopMessage: Send {
+    /// How to update the state given user interactions (button presses etc.).
+    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>);
+}
 
-    let len: i16 = triangles.len().try_into().unwrap();
-    for i in 0..len {
-        faces.push([i * 3, i * 3 + 1, i * 3 + 2])
+/// Enum update.
+
+pub struct UpdateEnumStringRepr {
+    /// The name.
+    pub label: String,
+    /// The new value.
+    pub value: String,
+}
+
+impl FromGuiLoopMessage for UpdateEnumStringRepr {
+    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
+        components
+            .get_mut(&self.label)
+            .unwrap()
+            .downcast_mut::<EnumStringRepr>()
+            .unwrap()
+            .value = self.value.clone();
     }
-    Entity3::from_position_color_vertices_and_faces(vertices, Faces::new(faces))
+}
+
+/// Variable update..
+pub struct UpdateValue<T> {
+    /// The name.
+    pub label: String,
+    /// The new value.
+    pub value: T,
+}
+
+impl FromGuiLoopMessage for UpdateValue<bool> {
+    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
+        components
+            .get_mut(&self.label)
+            .unwrap()
+            .downcast_mut::<Var<bool>>()
+            .unwrap()
+            .value = self.value;
+    }
+}
+
+/// Slider update.
+pub struct UpdateRangedValue<T> {
+    /// The name.
+    pub label: String,
+    /// The new value.
+    pub value: T,
+}
+
+impl<T: Number> FromGuiLoopMessage for UpdateRangedValue<T> {
+    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
+        components
+            .get_mut(&self.label)
+            .unwrap()
+            .downcast_mut::<RangedVar<T>>()
+            .unwrap()
+            .value = self.value;
+    }
+}
+
+/// Button press event.
+pub struct UpdateButton {
+    /// The name.
+    pub label: String,
+}
+
+impl FromGuiLoopMessage for UpdateButton {
+    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
+        components
+            .get_mut(&self.label)
+            .unwrap()
+            .downcast_mut::<Button>()
+            .unwrap()
+            .pressed = true;
+    }
 }

@@ -1,15 +1,36 @@
+//! The GUI loop implementation details.
+
 use std::sync::mpsc;
 
 use super::common;
 
+/// Components of the side-panel and widgets of the main panel.
+pub struct GuiData {
+    /// List of components such as buttons, sliders etc.
+    pub components: linked_hash_map::LinkedHashMap<String, Box<dyn common::Component>>,
+    /// List of widgets such as 3d widgets.
+    pub widgets: linked_hash_map::LinkedHashMap<String, Box<dyn common::Widget>>,
+}
+
+impl Default for GuiData {
+    fn default() -> Self {
+        Self {
+            components: linked_hash_map::LinkedHashMap::new(),
+            widgets: linked_hash_map::LinkedHashMap::new(),
+        }
+    }
+}
+
+/// Structure which holds data for main gui loop.
 pub struct GuiLoop {
     egui_mq: egui_miniquad::EguiMq,
     to_gui_loop_receiver: mpsc::Receiver<Box<dyn common::ToGuiLoopMessage>>,
     from_gui_loop_sender: mpsc::Sender<Box<dyn common::FromGuiLoopMessage>>,
-    data: common::GuiData,
+    data: GuiData,
 }
 
 impl GuiLoop {
+    /// Creates `GuiLoop` given `miniquad::Context` and sender/receiver structs.
     pub fn new(
         ctx: &mut miniquad::Context,
         to_gui_loop_receiver: mpsc::Receiver<Box<dyn common::ToGuiLoopMessage>>,
@@ -19,7 +40,7 @@ impl GuiLoop {
             egui_mq: egui_miniquad::EguiMq::new(ctx),
             to_gui_loop_receiver,
             from_gui_loop_sender,
-            data: common::GuiData::default(),
+            data: GuiData::default(),
         }
     }
 }
