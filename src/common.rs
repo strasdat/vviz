@@ -53,6 +53,21 @@ impl FromGuiLoopMessage for UpdateValue<bool> {
     }
 }
 
+pub struct UpdateButton {
+    pub label: String,
+}
+
+impl FromGuiLoopMessage for UpdateButton {
+    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
+        components
+            .get_mut(&self.label)
+            .unwrap()
+            .downcast_mut::<Button>()
+            .unwrap()
+            .pressed = true;
+    }
+}
+
 pub struct UpdateRangedValue<T> {
     pub label: String,
     pub value: T,
@@ -149,6 +164,27 @@ impl Component for Var<bool> {
     }
 }
 
+pub struct Button {
+    pub pressed: bool,
+}
+
+impl Component for Button {
+    fn show(
+        &mut self,
+        label: &str,
+        ui: &mut egui::Ui,
+        sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+    ) {
+        if ui.button(label).clicked() {
+            sender
+                .send(Box::new(UpdateButton {
+                    label: label.to_string(),
+                }))
+                .unwrap();
+        }
+    }
+}
+
 impl<T: Numbers> Component for Var<T> {
     fn show(
         &mut self,
@@ -206,6 +242,17 @@ impl ToGuiLoopMessage for AddEnumStringRepr {
                 values: self.values,
             }),
         );
+    }
+}
+
+pub struct AddButton {
+    pub label: String,
+}
+
+impl ToGuiLoopMessage for AddButton {
+    fn update_gui(self: Box<Self>, data: &mut GuiData, _ctx: &mut miniquad::Context) {
+        data.components
+            .insert(self.label, Box::new(Button { pressed: false }));
     }
 }
 

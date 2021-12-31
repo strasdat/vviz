@@ -10,7 +10,7 @@ Rapid prototyping GUI, and visual printf-style debugging for computer vision dev
 # Roadmap
 
  - 0.1: MVP
-   - [ ] components: slider, button, checkbox, combobox
+   - [x] components: slider, button, checkbox, combobox
    - [ ] multiple widgets for 3d rendering
    - [x] CI on github
    - [ ] create example folder

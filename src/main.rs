@@ -20,6 +20,7 @@ fn main() {
         let opt: Options = Options::Daz;
         let mut ui_options = manager.add_enum("options".to_string(), opt);
         let _ui_int64 = manager.add_i64("const int".to_string(), 42);
+        let mut ui_a_button = manager.add_button("a button".to_string());
 
         let w3d = manager.add_widget3("w3d".to_string());
         w3d.place_entity_at(
@@ -47,6 +48,9 @@ fn main() {
             }
             if ui_options.get_new_value().is_some() {
                 println!("new val {}", ui_options.get_value());
+            }
+            if ui_a_button.was_pressed() {
+                println!("a button pressed");
             }
 
             manager.sync_with_gui();

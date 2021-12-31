@@ -112,6 +112,50 @@ impl<
     }
 }
 
+pub struct UiButton {
+    pub stuff: Rc<RefCell<Stuff>>,
+    label: String,
+}
+
+impl UiButton {
+    pub fn new(stuff: Rc<RefCell<Stuff>>, label: String) -> Self {
+        stuff
+            .borrow_mut()
+            .message_queue
+            .push_back(Box::new(common::AddButton {
+                label: label.clone(),
+            }));
+        stuff
+            .borrow_mut()
+            .components
+            .insert(label.clone(), Box::new(common::Button { pressed: false }));
+        Self { stuff, label }
+    }
+
+    pub fn was_pressed(&mut self) -> bool {
+        let pressed = self
+            .stuff
+            .borrow()
+            .components
+            .get(&self.label)
+            .unwrap()
+            .downcast_ref::<common::Button>()
+            .unwrap()
+            .pressed;
+        if pressed {
+            self.stuff
+                .borrow_mut()
+                .components
+                .get_mut(&self.label)
+                .unwrap()
+                .downcast_mut::<common::Button>()
+                .unwrap()
+                .pressed = false;
+        }
+        pressed
+    }
+}
+
 pub struct UiVar<T> {
     pub stuff: Rc<RefCell<Stuff>>,
     label: String,
@@ -343,6 +387,10 @@ impl Manager {
             from_gui_loop_receiver,
             stuff: Rc::new(RefCell::new(Stuff::default())),
         }
+    }
+
+    pub fn add_button(&self, label: String) -> UiButton {
+        UiButton::new(self.stuff.clone(), label)
     }
 
     pub fn add_bool(&self, label: String, value: bool) -> UiVar<bool> {
