@@ -324,6 +324,8 @@ pub trait Widget: downcast_rs::DowncastSync {
         assigned_width: f32,
         assigned_height: f32,
     ) -> Option<egui::Response>;
+
+    fn aspect_ratio(&self) -> f32;
 }
 
 downcast_rs::impl_downcast!(sync Widget);
@@ -527,6 +529,10 @@ impl Widget for Widget3 {
                 .sense(egui::Sense::click_and_drag()),
         );
         Some(r)
+    }
+
+    fn aspect_ratio(&self) -> f32 {
+        self.aspect_ratio
     }
 }
 
@@ -733,20 +739,5 @@ pub fn colored_triangles(triangles: std::vec::Vec<ColoredTriangle>) -> Entity3 {
     for i in 0..len {
         faces.push([i * 3, i * 3 + 1, i * 3 + 2])
     }
-    // let faces = Faces::new(vec![
-    //     [0, 1, 2],
-    //     [0, 2, 3],
-    //     [6, 5, 4],
-    //     [7, 6, 4],
-    //     [8, 9, 10],
-    //     [8, 10, 11],
-    //     [14, 13, 12],
-    //     [15, 14, 12],
-    //     [16, 17, 18],
-    //     [16, 18, 19],
-    //     [22, 21, 20],
-    //     [23, 22, 20],
-    // ]);
-
     Entity3::from_position_color_vertices_and_faces(vertices, Faces::new(faces))
 }

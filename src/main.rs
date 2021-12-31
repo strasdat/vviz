@@ -47,6 +47,7 @@ fn main() {
             },
         }];
         w2.place_entity("trig".to_string(), common::colored_triangles(triangles));
+        let _w3 = manager.add_widget3("empty".to_string());
 
         loop {
             if ui_bool.get_new_value().is_some() {
