@@ -4,8 +4,9 @@ edition = "2021"
 name = "vviz"
 version = "0.0.1"
 license = "MIT OR Apache-2.0"
-keywords = ["gui", "graphics", "computervision", "vision"]
+keywords = ["gui", "vision", "image", "2d", "3d"]
 repository = "https://github.com/strasdat/vviz/"
+homepage = "https://docs.rs/vviz/latest/vviz/"
 readme = "README.md"
 
 [[example]]
@@ -15,11 +16,10 @@ name = "simple"
 downcast-rs = "1.2.0"
 egui = "0.16.0"
 egui-miniquad = "0.8.0"
+enum-as-inner = "0.3.3"
 linked-hash-map = "0.5.4"
 miniquad = { version = "=0.3.0-alpha.43" }
-static_assertions = "1.1.0"
 slice-of-array = "0.3.1"
-enum-as-inner = "0.3.3"
 nalgebra = "0.29.0"
 nalgebra-glm = "0.15.0"
 strum = "0.23"
