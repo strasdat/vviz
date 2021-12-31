@@ -531,11 +531,11 @@ impl Widget for Widget3 {
 }
 
 #[repr(C)]
-struct Color {
-    r: f32,
-    g: f32,
-    b: f32,
-    alpha: f32,
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub alpha: f32,
 }
 
 struct PositionColorVertices {
@@ -696,4 +696,57 @@ impl ToGuiLoopMessage for PlaceEntity {
             .entities
             .insert(self.named_entity.label.clone(), self.named_entity);
     }
+}
+
+pub struct ColoredTriangle {
+    pub face: [[f32; 3]; 3],
+    pub color: Color,
+}
+
+impl ColoredTriangle {
+    fn vec_of_arrays(vec_of_triangles: &[ColoredTriangle]) -> std::vec::Vec<[f32; 7]> {
+        let mut result = std::vec::Vec::<[f32; 7]>::with_capacity(3 * vec_of_triangles.len());
+        for triangle in vec_of_triangles {
+            for vertex in triangle.face {
+                result.push([
+                    vertex[0],
+                    vertex[1],
+                    vertex[2],
+                    triangle.color.r,
+                    triangle.color.g,
+                    triangle.color.b,
+                    triangle.color.alpha,
+                ])
+            }
+        }
+        result
+    }
+}
+
+pub fn colored_triangles(triangles: std::vec::Vec<ColoredTriangle>) -> Entity3 {
+    let vertices = PositionColorVertices {
+        vertices: ColoredTriangle::vec_of_arrays(&triangles),
+    };
+    let mut faces: Vec<[i16; 3]> = std::vec::Vec::new();
+
+    let len: i16 = triangles.len().try_into().unwrap();
+    for i in 0..len {
+        faces.push([i * 3, i * 3 + 1, i * 3 + 2])
+    }
+    // let faces = Faces::new(vec![
+    //     [0, 1, 2],
+    //     [0, 2, 3],
+    //     [6, 5, 4],
+    //     [7, 6, 4],
+    //     [8, 9, 10],
+    //     [8, 10, 11],
+    //     [14, 13, 12],
+    //     [15, 14, 12],
+    //     [16, 17, 18],
+    //     [16, 18, 19],
+    //     [22, 21, 20],
+    //     [23, 22, 20],
+    // ]);
+
+    Entity3::from_position_color_vertices_and_faces(vertices, Faces::new(faces))
 }

@@ -1,3 +1,5 @@
+use vviz::common;
+
 #[derive(
     Clone,
     Debug,
@@ -34,7 +36,17 @@ fn main() {
             nalgebra::Isometry3::<f32>::translation(0.0, 0.0, -0.75),
         );
 
-        //let mut _w2 = manager.add_widget3("w2".to_string());
+        let w2 = manager.add_widget3("w2".to_string());
+        let triangles = vec![common::ColoredTriangle {
+            face: [[0.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 1.0, 0.0]],
+            color: common::Color {
+                r: 1.0,
+                g: 0.0,
+                b: 0.0,
+                alpha: 1.0,
+            },
+        }];
+        w2.place_entity("trig".to_string(), common::colored_triangles(triangles));
 
         loop {
             if ui_bool.get_new_value().is_some() {
