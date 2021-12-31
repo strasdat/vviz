@@ -8,6 +8,9 @@ keywords = ["gui", "graphics", "computervision", "vision"]
 repository = "https://github.com/strasdat/vviz/"
 readme = "README.md"
 
+[[example]]
+name = "simple"
+
 [dependencies] 
 downcast-rs = "1.2.0"
 egui = "0.16.0"
