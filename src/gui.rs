@@ -48,24 +48,57 @@ impl miniquad::EventHandler for GuiLoop {
             });
 
             egui::CentralPanel::default().show(egui_ctx, |ui0| {
-                let w = ui0.available_width();
-                let h = ui0.available_height();
+                if self.data.widgets.is_empty() {
+                    return;
+                }
+                // the 98% here is a slight hack. This is to leave some buffer of the few pixel borders between the widgets/images.
+                let available_width: f32 = 0.98 * ui0.available_width();
+                let available_height: f32 = 0.98 * ui0.available_height();
 
+                let mut aspect_ratios = std::vec::Vec::with_capacity(self.data.widgets.len());
                 for (_, widget) in &mut self.data.widgets {
-                    let opt = widget.show(ui0, w, h);
-                    let r = opt.unwrap();
-                    // println!(
-                    //     "{} {} {} {}",
-                    //     r.rect.center().x,
-                    //     r.rect.center().y,
-                    //     r.rect.width(),
-                    //     r.rect.height()
-                    // );
-                    let hp = r.hover_pos();
-                    if hp.is_some() {
-                        println!("{} {}", hp.unwrap().x, hp.unwrap().y);
+                    aspect_ratios.push(widget.aspect_ratio());
+                }
+                aspect_ratios.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let n = aspect_ratios.len();
+                let median_aspect_ratio = if n % 2 == 0 {
+                    aspect_ratios[n / 2]
+                } else {
+                    0.5 * aspect_ratios[n / 2] + 0.5 * aspect_ratios[n / 2 + 1]
+                };
+
+                let mut max_width = 0.0;
+                let mut max_height = 0.0;
+
+                for num_cols in 1..=n {
+                    let num_rows: f32 = ((n as f32) / (num_cols as f32)).ceil();
+
+                    let w: f32 = available_width / (num_cols as f32);
+                    let h = (w / median_aspect_ratio).min(available_height / num_rows);
+                    let w = median_aspect_ratio * h;
+                    if w > max_width {
+                        max_width = w;
+                        max_height = h;
                     }
                 }
+
+                ui0.horizontal_wrapped(|ui| {
+                    for (_, widget) in &mut self.data.widgets {
+                        let opt = widget.show(ui, max_width, max_height);
+                        let r = opt.unwrap();
+                        // println!(
+                        //     "{} {} {} {}",
+                        //     r.rect.center().x,
+                        //     r.rect.center().y,
+                        //     r.rect.width(),
+                        //     r.rect.height()
+                        // );
+                        let hp = r.hover_pos();
+                        if hp.is_some() {
+                            println!("{} {}", hp.unwrap().x, hp.unwrap().y);
+                        }
+                    }
+                });
             });
         });
 

@@ -324,6 +324,8 @@ pub trait Widget: downcast_rs::DowncastSync {
         assigned_width: f32,
         assigned_height: f32,
     ) -> Option<egui::Response>;
+
+    fn aspect_ratio(&self) -> f32;
 }
 
 downcast_rs::impl_downcast!(sync Widget);
@@ -528,14 +530,18 @@ impl Widget for Widget3 {
         );
         Some(r)
     }
+
+    fn aspect_ratio(&self) -> f32 {
+        self.aspect_ratio
+    }
 }
 
 #[repr(C)]
-struct Color {
-    r: f32,
-    g: f32,
-    b: f32,
-    alpha: f32,
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub alpha: f32,
 }
 
 struct PositionColorVertices {
@@ -696,4 +702,42 @@ impl ToGuiLoopMessage for PlaceEntity {
             .entities
             .insert(self.named_entity.label.clone(), self.named_entity);
     }
+}
+
+pub struct ColoredTriangle {
+    pub face: [[f32; 3]; 3],
+    pub color: Color,
+}
+
+impl ColoredTriangle {
+    fn vec_of_arrays(vec_of_triangles: &[ColoredTriangle]) -> std::vec::Vec<[f32; 7]> {
+        let mut result = std::vec::Vec::<[f32; 7]>::with_capacity(3 * vec_of_triangles.len());
+        for triangle in vec_of_triangles {
+            for vertex in triangle.face {
+                result.push([
+                    vertex[0],
+                    vertex[1],
+                    vertex[2],
+                    triangle.color.r,
+                    triangle.color.g,
+                    triangle.color.b,
+                    triangle.color.alpha,
+                ])
+            }
+        }
+        result
+    }
+}
+
+pub fn colored_triangles(triangles: std::vec::Vec<ColoredTriangle>) -> Entity3 {
+    let vertices = PositionColorVertices {
+        vertices: ColoredTriangle::vec_of_arrays(&triangles),
+    };
+    let mut faces: Vec<[i16; 3]> = std::vec::Vec::new();
+
+    let len: i16 = triangles.len().try_into().unwrap();
+    for i in 0..len {
+        faces.push([i * 3, i * 3 + 1, i * 3 + 2])
+    }
+    Entity3::from_position_color_vertices_and_faces(vertices, Faces::new(faces))
 }
