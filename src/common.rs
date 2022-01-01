@@ -143,7 +143,7 @@ impl<T: Number> Component for RangedVar<T> {
         sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
     ) {
         if ui
-            .add(egui::Slider::new(&mut self.value, self.min..=self.max))
+            .add(egui::Slider::new(&mut self.value, self.min..=self.max).text(label))
             .changed()
         {
             sender
@@ -220,8 +220,6 @@ pub struct Widget3 {
     //offscreen_bind: miniquad::Bindings,
     offscreen_pass: miniquad::RenderPass,
     aspect_ratio: f32,
-    rx: f32,
-    ry: f32,
     texture_id: Option<egui::TextureId>,
 }
 
@@ -280,8 +278,6 @@ impl Widget3 {
             //offscreen_bind,
             offscreen_pass,
             aspect_ratio: 640.0 / 480.0,
-            rx: 0.,
-            ry: 0.,
             texture_id: None,
         }
     }
@@ -297,11 +293,11 @@ impl Widget for Widget3 {
         );
         let view_proj = proj * view;
 
-        self.rx += 0.01;
-        self.ry += 0.03;
+        // TODO: implement mouse interaction / orbital control. For now the camera is placed at a
+        //       constant position looking at the scene.
         let camera_pose_scene = nalgebra::Isometry3::<f32>::from_parts(
-            nalgebra::Translation3::<f32>::new(0.0, 0.0, 0.0),
-            nalgebra::UnitQuaternion::<f32>::from_euler_angles(self.rx, self.ry, 0.),
+            nalgebra::Translation3::<f32>::new(0.0, 0.0, -3.0),
+            nalgebra::UnitQuaternion::<f32>::from_euler_angles(0.0, 0.0, 0.),
         );
 
         // the offscreen render pipeline, following this example:
@@ -386,6 +382,7 @@ impl Widget for Widget3 {
 
 pub trait Number: egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display {}
 
+impl Number for usize {}
 impl Number for i32 {}
 impl Number for i64 {}
 impl Number for f32 {}
@@ -513,6 +510,36 @@ impl ToGuiLoopMessage for PlaceEntity3 {
             .unwrap()
             .entities
             .insert(self.named_entity.label.clone(), self.named_entity);
+    }
+}
+
+/// Updates pose of [super::entities::Entity3] in corresponding [Widget3].
+///
+/// It is no-op, if an entity with that name `entity_label` does not exist.
+pub struct UpdateScenePoseEntity3 {
+    /// Name of widget.
+    pub widget_label: String,
+    /// Name of entity.
+    pub entity_label: String,
+    /// Pose of the entity in the scene.
+    pub scene_pose_entity: nalgebra::Isometry3<f32>,
+}
+
+impl ToGuiLoopMessage for UpdateScenePoseEntity3 {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+        let maybe_entity = data
+            .widgets
+            .get_mut(&self.widget_label)
+            .unwrap()
+            .downcast_mut::<Widget3>()
+            .unwrap()
+            .entities
+            .get_mut(&self.entity_label);
+        if maybe_entity.is_none() {
+            // No-op.
+            return;
+        }
+        maybe_entity.unwrap().scene_pose_entity = self.scene_pose_entity;
     }
 }
 

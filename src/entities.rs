@@ -146,20 +146,20 @@ pub fn colored_cube(scale: f32) -> Entity3 {
        [-scale,  scale,  scale,    0.5, 0.5, 1.0, 1.0],
        [-scale, -scale,  scale,    0.5, 0.5, 1.0, 1.0],
   
-       [ scale, -scale, -scale,    1.0, 0.5, 0.0, 1.0],
-       [ scale,  scale, -scale,    1.0, 0.5, 0.0, 1.0],
-       [ scale,  scale,  scale,    1.0, 0.5, 0.0, 1.0],
-       [ scale, -scale,  scale,    1.0, 0.5, 0.0, 1.0],
+       [ scale, -scale, -scale,    1.0, 0.5, 0.5, 1.0],
+       [ scale,  scale, -scale,    1.0, 0.5, 0.5, 1.0],
+       [ scale,  scale,  scale,    1.0, 0.5, 0.5, 1.0],
+       [ scale, -scale,  scale,    1.0, 0.5, 0.5, 1.0],
        
-       [-scale, -scale, -scale,    0.0, 0.5, 1.0, 1.0],
-       [-scale, -scale,  scale,    0.0, 0.5, 1.0, 1.0],
-       [ scale, -scale,  scale,    0.0, 0.5, 1.0, 1.0],
-       [ scale, -scale, -scale,    0.0, 0.5, 1.0, 1.0],
+       [-scale, -scale, -scale,    0.5, 0.5, 1.0, 1.0],
+       [-scale, -scale,  scale,    0.5, 0.5, 1.0, 1.0],
+       [ scale, -scale,  scale,    0.5, 0.5, 1.0, 1.0],
+       [ scale, -scale, -scale,    0.5, 0.5, 1.0, 1.0],
          
-       [-scale,  scale, -scale,    1.0, 0.0, 0.5, 1.0],
-       [-scale,  scale,  scale,    1.0, 0.0, 0.5, 1.0],
-       [ scale,  scale,  scale,    1.0, 0.0, 0.5, 1.0],
-       [ scale,  scale, -scale,    1.0, 0.0, 0.5, 1.0],
+       [-scale,  scale, -scale,    1.0, 0.5, 0.5, 1.0],
+       [-scale,  scale,  scale,    1.0, 0.5, 0.5, 1.0],
+       [ scale,  scale,  scale,    1.0, 0.5, 0.5, 1.0],
+       [ scale,  scale, -scale,    1.0, 0.5, 0.5, 1.0],
     ]};
 
     let faces = Faces::new(vec![
