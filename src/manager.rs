@@ -386,6 +386,9 @@ impl UiWidget3 {
 
     /// Adds new [entities::Entity3] to [UiWidget3] at specified pose. If an entity with such
     /// `label` already exists it will be replaced.
+    ///
+    /// Here `scene`_pose_entity` is the pose (3d position and orientation) of the entity in the
+    /// scene reference frame.
     pub fn place_entity_at(
         &self,
         label: String,
@@ -405,7 +408,12 @@ impl UiWidget3 {
             }));
     }
 
-    /// Updates pose.
+    /// Updates `scene`_pose_entity` of the [entities::Entity3] with name `label`.
+    ///
+    /// If no such entity exists, this is no-op.
+    ///
+    /// Here `scene`_pose_entity` is the pose (3d position and orientation) of the entity in the
+    /// scene reference frame.
     pub fn update_scene_pose_entity(
         &self,
         label: String,
@@ -451,7 +459,7 @@ impl Manager {
     }
 
     /// Adds number [i32, i64, f32, f64] as a slider to side-panel.
-    pub fn add_ranged_number<T: common::Number>(
+    pub fn add_ranged_value<T: common::Number>(
         &self,
         label: String,
         value: T,

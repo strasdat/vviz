@@ -7,7 +7,7 @@
 
 Rapid prototyping GUI, and visual printf-style debugging for computer vision development.
 
-Its core dependencies are [`egui`](https://github.com/not-fl3/egui) and 
+Its core dependencies are [`egui`](https://github.com/emilk/egui) and 
 [Miniquad](https://github.com/not-fl3/miniquad). For a full list of dependencies, please inspect the
 [Cargo.toml](Cargo.toml) file.
 
@@ -17,114 +17,126 @@ Its core dependencies are [`egui`](https://github.com/not-fl3/egui) and
 ### Placing a 3d entity in the main panel.
 
 
-``` compile
-vviz::app::spawn(|mut manager: vviz::manager::Manager| {
-    let w3d = manager.add_widget3("w3d".to_string());    
-    w3d.place_entity(
-        "cube".to_string(),
-        vviz::entities::colored_cube(1.0)
-    );
-    loop {
-        manager.sync_with_gui();
-    }
-});
-```
-
-
-### Interacting with ranged values (sliders), bools (checkboxes) and enums (combo boxes).
-
-
-``` compile
-#[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    strum_macros::Display,
-    strum_macros::EnumString,
-    strum_macros::EnumVariantNames,
-)]
-enum Manipulation {
-    Position,
-    Orientation,
-}
-
-vviz::app::spawn(|mut manager: vviz::manager::Manager| {
-    let w3d = manager.add_widget3("w3d".to_string());
-    w3d.place_entity("cube".to_string(), vviz::entities::colored_cube(1.0));
-    let mut scene_pose_entity = nalgebra::Isometry3::<f32>::identity();
-    let mut ui_delta = manager.add_ranged_number("delta".to_string(), 0.0, -1.0, 1.0);
-    let mut ui_dim = manager.add_ranged_number("dimension".to_string(), 0, 0, 2);
-    let mut ui_manipulation =
-        manager.add_enum("manipulation".to_string(), Manipulation::Position);
-    loop {
-        if ui_delta.get_new_value().is_some()
-            || ui_dim.get_new_value().is_some()
-            || ui_manipulation.get_new_value().is_some()
-        {
-            let delta = ui_delta.get_value();
-            let manipulation = ui_manipulation.get_value();
-            match manipulation {
-                Manipulation::Position => {
-                    scene_pose_entity.translation.vector[ui_dim.get_value()] = delta;
-                }
-                Manipulation::Orientation => {
-                    let mut scaled_axis = nalgebra::Vector3::zeros();
-                    scaled_axis[ui_dim.get_value()] = delta;
-                    scene_pose_entity.rotation =
-                        nalgebra::UnitQuaternion::<f32>::from_scaled_axis(scaled_axis);
-                }
-            }
-            w3d.update_scene_pose_entity("cube".to_string(), scene_pose_entity)
+```rust, no_run
+    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+        let w3d = manager.add_widget3("w3d".to_string());
+        w3d.place_entity_at(
+            "cube".to_string(),
+            vviz::entities::colored_cube(1.0),
+            vviz::math::rot_x(0.7),
+        );
+        loop {
+            manager.sync_with_gui();
         }
-        manager.sync_with_gui();
-    }
-});
-
+    });
 ```
+
+![simple example image](media/simple.png)
+
+### Interacting with ranged values (sliders) and enums (combo boxes).
+
+
+```rust, no_run
+    #[derive(
+        Clone,
+        Debug,
+        PartialEq,
+        strum_macros::Display,
+        strum_macros::EnumString,
+        strum_macros::EnumVariantNames,
+    )]
+    enum Manipulation {
+        Position,
+        Orientation,
+    }
+
+    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+        let w3d = manager.add_widget3("w3d".to_string());
+
+        w3d.place_entity("cube".to_string(), vviz::entities::colored_cube(1.0));
+        let mut scene_pose_entity = nalgebra::Isometry3::<f32>::identity();
+
+        let mut ui_delta = manager.add_ranged_value("delta".to_string(), 0.0, -1.0, 1.0);
+        let mut ui_dim = manager.add_ranged_value("dimension".to_string(), 0, 0, 2);
+        let mut ui_manipulation =
+            manager.add_enum("manipulation".to_string(), Manipulation::Position);
+
+        loop {
+            if ui_delta.get_new_value().is_some()
+                || ui_dim.get_new_value().is_some()
+                || ui_manipulation.get_new_value().is_some()
+            {
+                let delta = ui_delta.get_value();
+                let manipulation = ui_manipulation.get_value();
+                match manipulation {
+                    Manipulation::Position => {
+                        scene_pose_entity.translation.vector[ui_dim.get_value()] = delta;
+                    }
+                    Manipulation::Orientation => {
+                        let mut scaled_axis = nalgebra::Vector3::zeros();
+                        scaled_axis[ui_dim.get_value()] = delta;
+                        scene_pose_entity.rotation =
+                            nalgebra::UnitQuaternion::<f32>::from_scaled_axis(scaled_axis);
+                    }
+                }
+                w3d.update_scene_pose_entity("cube".to_string(), scene_pose_entity)
+            }
+            manager.sync_with_gui();
+        }
+    });
+```
+
+![interaction example gif](media/interaction.gif)
+
 
 ### Multiple widgets
 
 
-``` compile
-vviz::app::spawn(|mut manager: vviz::manager::Manager| {
-     let w3d = manager.add_widget3("w3d".to_string());
-     w3d.place_entity_at(
-         "cube".to_string(),
-         vviz::entities::colored_cube(0.5),
-         nalgebra::Isometry3::<f32>::translation(0.0, 0.0, 0.75),
-     );
-     w3d.place_entity_at(
-         "cube2".to_string(),
-         vviz::entities::colored_cube(0.5),
-         nalgebra::Isometry3::<f32>::translation(0.0, 0.0, -0.75),
-     );
+```rust, no_run
+    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+        let w3d = manager.add_widget3("w3d".to_string());
+        w3d.place_entity_at(
+            "cube".to_string(),
+            vviz::entities::colored_cube(0.5),
+            nalgebra::Isometry3::<f32>::translation(0.0, 0.75, 0.0),
+        );
+        w3d.place_entity_at(
+            "cube2".to_string(),
+            vviz::entities::colored_cube(0.5),
+            nalgebra::Isometry3::<f32>::translation(0.0, -0.75, 0.0),
+        );
 
-    let w2 = manager.add_widget3("w2".to_string());
-    let triangles = vec![vviz::entities::ColoredTriangle {
-        face: [[2.0, -2.0, 0.0], [2.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
-        color: vviz::entities::Color {
-            r: 1.0,
-            g: 0.0,
-            b: 0.0,
-            alpha: 1.0,
-        },
-    }];
-    w2.place_entity("trig".to_string(), vviz::entities::colored_triangles(triangles));
-    let _w3 = manager.add_widget3("empty".to_string());
+        let w2 = manager.add_widget3("w2".to_string());
+        let triangles = vec![vviz::entities::ColoredTriangle {
+            face: [[2.0, -2.0, 0.0], [2.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
+            color: vviz::entities::Color {
+                r: 1.0,
+                g: 0.0,
+                b: 0.0,
+                alpha: 1.0,
+            },
+        }];
+        w2.place_entity(
+            "triangles".to_string(),
+            vviz::entities::colored_triangles(triangles),
+        );
+        let _w3 = manager.add_widget3("empty".to_string());
 
-    let mut ui_a_button = manager.add_button("a button".to_string());
-    loop {
-        if ui_a_button.was_pressed() {
-            println!("a button pressed");
+        let mut ui_a_button = manager.add_button("a button".to_string());
+        loop {
+            if ui_a_button.was_pressed() {
+                println!("a button pressed");
+            }
+            manager.sync_with_gui();
         }
-        manager.sync_with_gui();
-    }
-});
+    });
 ```
+
+![multi-widget example gif](media/multi_widgets.gif)
 
 ## Roadmap
 
- - 0.1: MVP
+ - **0.1: MVP**
    - [x] components: slider, button, checkbox, combobox
    - [x] multiple widgets for 3d rendering
    - [x] CI on github

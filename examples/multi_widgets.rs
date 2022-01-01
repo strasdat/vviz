@@ -4,12 +4,12 @@ fn main() {
         w3d.place_entity_at(
             "cube".to_string(),
             vviz::entities::colored_cube(0.5),
-            nalgebra::Isometry3::<f32>::translation(0.0, 0.0, 0.75),
+            nalgebra::Isometry3::<f32>::translation(0.0, 0.75, 0.0),
         );
         w3d.place_entity_at(
             "cube2".to_string(),
             vviz::entities::colored_cube(0.5),
-            nalgebra::Isometry3::<f32>::translation(0.0, 0.0, -0.75),
+            nalgebra::Isometry3::<f32>::translation(0.0, -0.75, 0.0),
         );
 
         let w2 = manager.add_widget3("w2".to_string());
@@ -23,7 +23,7 @@ fn main() {
             },
         }];
         w2.place_entity(
-            "trig".to_string(),
+            "triangles".to_string(),
             vviz::entities::colored_triangles(triangles),
         );
         let _w3 = manager.add_widget3("empty".to_string());
