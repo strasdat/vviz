@@ -4,7 +4,7 @@ use std::sync::mpsc;
 
 use super::common;
 
-/// Components of the side-panel and widgets of the main panel.
+/// [super::common::Component]s of the side-panel and [super::common::Widget]s of the main panel.
 pub struct GuiData {
     /// List of components such as buttons, sliders etc.
     pub components: linked_hash_map::LinkedHashMap<String, Box<dyn common::Component>>,
@@ -58,10 +58,6 @@ impl miniquad::EventHandler for GuiLoop {
         }
 
         self.egui_mq.run(ctx, |egui_ctx| {
-            //self.side_panel();
-
-            //let Self { egui_mq, .. } = self;
-
             egui::SidePanel::left("ver").show(egui_ctx, |ui| {
                 for (label, var) in &mut self.data.components {
                     var.show(label, ui, &mut self.from_gui_loop_sender);

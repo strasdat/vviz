@@ -1,4 +1,4 @@
-//! Common structures shared between manager and gui loop.
+//! Common structures shared between [super::manager::Manager] and [super::gui::GuiLoop].
 
 use super::entities;
 use super::gui;
@@ -62,6 +62,8 @@ impl Component for EnumStringRepr {
 }
 
 /// Variable bool (checkbox) or numeric (read-only text box).
+///
+/// Interfaced by [super::manager::UiVar].
 pub struct Var<T> {
     /// Current value.
     pub value: T,
@@ -86,6 +88,8 @@ impl Component for Var<bool> {
 }
 
 /// A button.
+///
+/// Interfaced by [super::manager::UiButton].
 pub struct Button {
     /// Is true is recently pressed.
     pub pressed: bool,
@@ -120,6 +124,8 @@ impl<T: Number> Component for Var<T> {
 }
 
 /// A range value, represented as slider.
+///
+/// Interfaced by [super::manager::UiRangedVar].
 pub struct RangedVar<T> {
     /// Current value.
     pub value: T,
@@ -163,7 +169,7 @@ pub trait Widget: downcast_rs::DowncastSync {
         assigned_height: f32,
     ) -> Option<egui::Response>;
 
-    /// The apect ratio of the
+    /// The aspect ratio of self.
     fn aspect_ratio(&self) -> f32;
 }
 
@@ -207,7 +213,7 @@ mod offscreen_shader {
     }
 }
 
-/// Widget for 3d content such as meshes, line segments and point clouds.
+/// [Widget] for 3d content such as meshes, line segments and point clouds.
 pub struct Widget3 {
     entities: linked_hash_map::LinkedHashMap<String, entities::NamedEntity3>,
     offscreen_pipeline: miniquad::Pipeline,
@@ -385,7 +391,8 @@ impl Number for i64 {}
 impl Number for f32 {}
 impl Number for f64 {}
 
-/// Message from  `Manager` to `GuiLoop`, such as to add a component or widget.
+/// Message from  [super::manager::Manager] to [super::gui::GuiLoop], such as to add a component or
+/// widget.
 pub trait ToGuiLoopMessage: Send {
     /// How that component or widget shall be displayed.
     fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context);
@@ -426,7 +433,9 @@ impl ToGuiLoopMessage for AddButton {
     }
 }
 
-/// Add bool (as checkbox) or numeric value (ad read-only text box) to side panel.
+/// Add bool (as checkbox) or numeric value (as read-only text box) to side panel.
+///
+/// Also see [Var].
 pub struct AddVar<T> {
     /// The name of variable.
     pub label: String,
@@ -449,7 +458,8 @@ impl<T: Number> ToGuiLoopMessage for AddVar<T> {
 }
 
 /// Add a numeric value as a slider to side panel.
-
+///
+/// Also see [RangedVar].
 pub struct AddRangedVar<T> {
     /// Name of variable.
     pub label: String,
@@ -474,7 +484,7 @@ impl<T: Number> ToGuiLoopMessage for AddRangedVar<T> {
     }
 }
 
-/// Adds 3d widget to main panel.
+/// Adds [Widget3] to main panel.
 pub struct AddWidget3 {
     /// Name of widget
     pub label: String,
@@ -486,15 +496,15 @@ impl ToGuiLoopMessage for AddWidget3 {
     }
 }
 
-/// Place3d  entity in corresponding 3d widget.
-pub struct PlaceEntity {
+/// Place [super::entities::Entity3] in corresponding [Widget3].
+pub struct PlaceEntity3 {
     /// Name of widget.
     pub widget_label: String,
     /// The 3d entity
     pub named_entity: entities::NamedEntity3,
 }
 
-impl ToGuiLoopMessage for PlaceEntity {
+impl ToGuiLoopMessage for PlaceEntity3 {
     fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.widgets
             .get_mut(&self.widget_label)
@@ -518,14 +528,15 @@ impl ToGuiLoopMessage for DeleteComponent {
     }
 }
 
-/// Message from `GuiLoop` to `Manager`.
+/// Message from [super::gui::GuiLoop] to [super::manager::Manager].
 pub trait FromGuiLoopMessage: Send {
     /// How to update the state given user interactions (button presses etc.).
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>);
 }
 
-/// Enum update.
-
+/// [super::manager::UiEnum]  (i.e. slider) update.
+///
+/// See also [EnumStringRepr].
 pub struct UpdateEnumStringRepr {
     /// The name.
     pub label: String,
@@ -544,7 +555,9 @@ impl FromGuiLoopMessage for UpdateEnumStringRepr {
     }
 }
 
-/// Variable update..
+/// [Var] update.
+///
+/// See also [super::manager::UiVar].
 pub struct UpdateValue<T> {
     /// The name.
     pub label: String,
@@ -563,7 +576,9 @@ impl FromGuiLoopMessage for UpdateValue<bool> {
     }
 }
 
-/// Slider update.
+/// [RangedVar] (slider) update.
+///
+/// See also [super::manager::UiRangedVar].
 pub struct UpdateRangedValue<T> {
     /// The name.
     pub label: String,
@@ -582,7 +597,9 @@ impl<T: Number> FromGuiLoopMessage for UpdateRangedValue<T> {
     }
 }
 
-/// Button press event.
+/// [Button] press event.
+///
+/// See also [super::manager::UiButton].
 pub struct UpdateButton {
     /// The name.
     pub label: String,
