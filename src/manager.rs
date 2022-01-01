@@ -9,7 +9,7 @@ use std::sync::mpsc;
 use super::common;
 use super::entities;
 
-/// Shared data between the varies ui structs such `UiButton`, `UiWidget3` and `UiVar<T>`.
+/// Shared data between the varies ui structs such [UiButton], [UiWidget3] and [UiVar<T>].
 pub struct Shared {
     components: LinkedHashMap<String, Box<dyn common::Component>>,
     message_queue: std::collections::VecDeque<Box<dyn common::ToGuiLoopMessage>>,
@@ -24,17 +24,17 @@ impl Default for Shared {
     }
 }
 
-/// The users employ the `Manager` the manager to add components and widgets to the gui, and receive
-/// state updates.
+/// The users employ the [Manager] to add [super::common::Component]s and [super::common::Widget]s
+/// to the gui, and receive state updates.
 ///
-/// It communicates with `GuiLoop` through sender and receiver structs.
+/// It communicates with [super::gui::GuiLoop] through sender and receiver structs.
 pub struct Manager {
     to_gui_loop_sender: mpsc::Sender<Box<dyn common::ToGuiLoopMessage>>,
     from_gui_loop_receiver: mpsc::Receiver<Box<dyn common::FromGuiLoopMessage>>,
     shared: Rc<RefCell<Shared>>,
 }
 
-/// Ui element to manipulate an enum.
+/// Ui element to manipulate an enum. It is represented as a combo box.
 pub struct UiEnum<T> {
     shared: Rc<RefCell<Shared>>,
     label: String,
@@ -165,9 +165,9 @@ impl UiButton {
     }
 }
 
-/// Ui element for a bool or number (i32, i64, f32, f64).
+/// Ui element for a [bool] or number ([i32], [i64], [f32], [f64]).
 ///
-/// The bool is represented as a checkbox. The number is
+/// The bool is represented as a checkbox. The [Number][super::common::Number] is
 /// considered constant and represented as a readonly text box.
 pub struct UiVar<T> {
     shared: Rc<RefCell<Shared>>,
@@ -283,7 +283,8 @@ impl<T: common::Number> UiVar<T> {
     }
 }
 
-/// Ui element for a number (i32, i64, f32, f64) with a given range `[min, max]`.
+/// Ui element for a [super::common::Number] ([i32], [i64], [f32], [f64]) with a given range
+/// `[min, max]`.
 ///
 /// It is represented as a slider.
 pub struct UiRangedVar<T> {
@@ -367,13 +368,13 @@ impl UiWidget3 {
         Self { label, shared }
     }
 
-    /// Adds new `entity` to 3d widget. If an entity with such `label` already exists it will be
-    /// replaced.
+    /// Adds new [entities::Entity3] to [UiWidget3]. If an entity with such `label` already exists
+    /// it will be replaced.
     pub fn place_entity(&self, label: String, entity: entities::Entity3) {
         self.shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::PlaceEntity {
+            .push_back(Box::new(common::PlaceEntity3 {
                 widget_label: self.label.clone(),
                 named_entity: entities::NamedEntity3 {
                     label,
@@ -383,8 +384,8 @@ impl UiWidget3 {
             }));
     }
 
-    /// Adds new `entity` to 3d widget at specified pose. If an entity with such `label` already
-    /// exists it will be replaced.
+    /// Adds new [entities::Entity3] to [UiWidget3] at specified pose. If an entity with such
+    /// `label` already exists it will be replaced.
     pub fn place_entity_at(
         &self,
         label: String,
@@ -394,7 +395,7 @@ impl UiWidget3 {
         self.shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::PlaceEntity {
+            .push_back(Box::new(common::PlaceEntity3 {
                 widget_label: self.label.clone(),
                 named_entity: entities::NamedEntity3 {
                     label,
@@ -406,8 +407,8 @@ impl UiWidget3 {
 }
 
 impl Manager {
-    /// Constructs manager from sender/receiver. This usually needs not be called by the user, since
-    /// it is constructed by the `App`.
+    /// Constructs [Manager] from sender/receiver. This usually needs not be called by the user,
+    /// since it is constructed by the [super::app].
     pub fn new(
         to_gui_loop_sender: mpsc::Sender<Box<dyn common::ToGuiLoopMessage>>,
         from_gui_loop_receiver: mpsc::Receiver<Box<dyn common::FromGuiLoopMessage>>,
@@ -461,7 +462,8 @@ impl Manager {
         UiWidget3::new(self.shared.clone(), label)
     }
 
-    /// Sync call to update `Manager` with `GuiLoop`. Should be called repeatably, e.g. in a loop.
+    /// Sync call to update [Manager] with [super::gui::GuiLoop]. Should be called repeatably, e.g.
+    /// in a loop.
     ///
     /// Example
     /// ``` no_run

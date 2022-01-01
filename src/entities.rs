@@ -1,4 +1,4 @@
-//! 2d and 3d entities to be added to widget.
+//! 2d and 3d entities to be added to a [super::common::Widget].
 
 #![allow(dead_code)]
 
@@ -91,16 +91,6 @@ pub struct Entity3 {
     pub faces: Faces,
 }
 
-/// A named entity has a pose, a name and - well - an entity.
-pub struct NamedEntity3 {
-    /// The name.
-    pub label: String,
-    /// The 3d entity (mesh, line segments or point cloud).
-    pub entity: Entity3,
-    /// Pose of the entity in the scene.
-    pub scene_pose_entity: nalgebra::Isometry3<f32>,
-}
-
 impl Entity3 {
     fn from_position_color_vertices_and_faces(
         vertices: PositionColorVertices,
@@ -125,6 +115,16 @@ impl Entity3 {
             faces,
         }
     }
+}
+
+/// A named entity has a pose, a name and - well - an [Entity3].
+pub struct NamedEntity3 {
+    /// The name.
+    pub label: String,
+    /// The 3d entity (mesh, line segments or point cloud).
+    pub entity: Entity3,
+    /// Pose of the entity in the scene.
+    pub scene_pose_entity: nalgebra::Isometry3<f32>,
 }
 
 /// Creates a colored cube with a given scale.
@@ -208,7 +208,7 @@ impl ColoredTriangle {
     }
 }
 
-/// Creates a list of colored triangles.
+/// Fills an [Entity3] with colored triangles.
 pub fn colored_triangles(triangles: std::vec::Vec<ColoredTriangle>) -> Entity3 {
     let vertices = PositionColorVertices {
         vertices: ColoredTriangle::vec_of_arrays(&triangles),

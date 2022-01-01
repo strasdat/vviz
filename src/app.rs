@@ -49,16 +49,22 @@ impl App {
     }
 }
 
-/// This spawns the main application which one whishes to visually/interactively debug.
+/// This spawns the main application thread - which one whishes to visually/interactively debug.
 ///
 /// Example
 /// ``` no_run
 /// vviz::app::spawn(|mut manager: vviz::manager::Manager| {
 ///     let mut ui_a_button = manager.add_button("a button".to_string());
+///
+///     // Some initial application logic...
+///
 ///     loop {
 ///        if ui_a_button.was_pressed() {
 ///           println!("a button pressed");
 ///         }
+///
+///         /// repeated application logic...
+///
 ///         manager.sync_with_gui();
 ///     }
 /// });

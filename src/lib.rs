@@ -1,4 +1,4 @@
-//! The lib crate, duh.
+//! Rapid prototyping GUI, and visual printf-style debugging for computer vision development.
 
 #![warn(missing_docs)]
 
