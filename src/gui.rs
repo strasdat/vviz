@@ -68,9 +68,9 @@ impl miniquad::EventHandler for GuiLoop {
                 if self.data.widgets.is_empty() {
                     return;
                 }
-                // the 98% here is a slight hack. This is to leave some buffer of the few pixel borders between the widgets/images.
-                let available_width: f32 = 0.98 * ui0.available_width();
-                let available_height: f32 = 0.98 * ui0.available_height();
+                // the 95% here is a slight hack. This is to leave some buffer of the few pixel borders between the widgets/images.
+                let available_width: f32 = 0.95 * ui0.available_width();
+                let available_height: f32 = 0.95 * ui0.available_height();
 
                 let mut aspect_ratios = std::vec::Vec::with_capacity(self.data.widgets.len());
                 for (_, widget) in &mut self.data.widgets {
@@ -78,7 +78,7 @@ impl miniquad::EventHandler for GuiLoop {
                 }
                 aspect_ratios.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                 let n = aspect_ratios.len();
-                let median_aspect_ratio = if n % 2 == 0 {
+                let median_aspect_ratio = if n % 2 == 1 {
                     aspect_ratios[n / 2]
                 } else {
                     0.5 * aspect_ratios[n / 2] + 0.5 * aspect_ratios[n / 2 + 1]

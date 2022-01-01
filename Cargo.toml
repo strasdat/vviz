@@ -12,6 +12,12 @@ readme = "README.md"
 [[example]]
 name = "simple"
 
+[[example]]
+name = "interaction"
+
+[[example]]
+name = "multi_widgets"
+
 [dependencies] 
 downcast-rs = "1.2.0"
 egui = "0.16.0"

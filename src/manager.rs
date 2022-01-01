@@ -404,6 +404,21 @@ impl UiWidget3 {
                 },
             }));
     }
+
+    /// Updates pose.
+    pub fn update_scene_pose_entity(
+        &self,
+        label: String,
+        scene_pose_entity: nalgebra::Isometry3<f32>,
+    ) {
+        self.shared.borrow_mut().message_queue.push_back(Box::new(
+            common::UpdateScenePoseEntity3 {
+                widget_label: self.label.clone(),
+                entity_label: label,
+                scene_pose_entity,
+            },
+        ));
+    }
 }
 
 impl Manager {
