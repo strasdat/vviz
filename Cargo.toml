@@ -1,22 +1,18 @@
 [package]
-description = "Rapid prototyping GUI, and visual printf-style debugging for computer vision development"
-edition = "2021"
 name = "vviz"
-version = "0.1.0"
-license = "MIT OR Apache-2.0"
+description = "Rapid prototyping GUI, and visual printf-style debugging for computer vision development"
+documentation = "https://docs.rs/vviz"
+edition = "2021"
+homepage = "https://docs.rs/vviz"
 keywords = ["gui", "vision", "image", "2d", "3d"]
-repository = "https://github.com/strasdat/vviz/"
-homepage = "https://docs.rs/vviz/latest/vviz/"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
-
-[[example]]
-name = "simple"
-
-[[example]]
-name = "interaction"
-
-[[example]]
-name = "multi_widgets"
+repository = "https://github.com/strasdat/vviz/"
+version = "0.1.0"
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
 
 [dependencies] 
 downcast-rs = "1.2.0"
@@ -30,3 +26,12 @@ nalgebra = "0.29.0"
 nalgebra-glm = "0.15.0"
 strum = "0.23"
 strum_macros = "0.23.1"
+
+[[example]]
+name = "simple"
+
+[[example]]
+name = "interaction"
+
+[[example]]
+name = "multi_widgets"
