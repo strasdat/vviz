@@ -286,17 +286,11 @@ impl Widget3 {
 impl Widget for Widget3 {
     fn render(&mut self, ctx: &mut miniquad::Context) {
         let proj = nalgebra_glm::perspective_fov_rh(60.0f32.to_radians(), 640.0, 480.0, 0.01, 10.0);
-        let view = nalgebra_glm::look_at_rh(
-            &nalgebra_glm::vec3(0.0, 1.5, 3.0),
-            &nalgebra_glm::vec3(0.0, 0.0, 0.0),
-            &nalgebra_glm::vec3(0.0, 1.0, 0.0),
-        );
-        let view_proj = proj * view;
 
         // TODO: implement mouse interaction / orbital control. For now the camera is placed at a
         //       constant position looking at the scene.
         let camera_pose_scene = nalgebra::Isometry3::<f32>::from_parts(
-            nalgebra::Translation3::<f32>::new(0.0, 0.0, -3.0),
+            nalgebra::Translation3::<f32>::new(0.0, 0.0, -4.0),
             nalgebra::UnitQuaternion::<f32>::from_euler_angles(0.0, 0.0, 0.),
         );
 
@@ -335,7 +329,7 @@ impl Widget for Widget3 {
             ctx.apply_bindings(&offscreen_bind);
 
             let vs_params = offscreen_shader::Uniforms {
-                mvp: view_proj
+                mvp: proj
                     * camera_pose_scene.to_matrix()
                     * named_entity.scene_pose_entity.to_matrix(),
             };

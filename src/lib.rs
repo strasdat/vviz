@@ -7,6 +7,7 @@ pub mod common;
 pub mod entities;
 pub mod gui;
 pub mod manager;
+pub mod math;
 
 // Makes sure that example code in the readme compiles.
 #[doc = include_str!("../README.md")]

@@ -68,7 +68,8 @@ impl miniquad::EventHandler for GuiLoop {
                 if self.data.widgets.is_empty() {
                     return;
                 }
-                // the 95% here is a slight hack. This is to leave some buffer of the few pixel borders between the widgets/images.
+                // the 95% here is a slight hack. This is to leave some buffer of the few pixel
+                // borders between the widgets/images.
                 let available_width: f32 = 0.95 * ui0.available_width();
                 let available_height: f32 = 0.95 * ui0.available_height();
 
@@ -112,7 +113,7 @@ impl miniquad::EventHandler for GuiLoop {
                         // );
                         let hp = r.hover_pos();
                         if hp.is_some() {
-                            println!("{} {}", hp.unwrap().x, hp.unwrap().y);
+                            //println!("{} {}", hp.unwrap().x, hp.unwrap().y);
                         }
                     }
                 });
