@@ -294,19 +294,21 @@ pub struct UiRangedVar<T> {
 }
 
 impl<T: common::Number> UiRangedVar<T> {
-    fn new(shared: Rc<RefCell<Shared>>, label: String, value: T, min: T, max: T) -> Self {
+    fn new(shared: Rc<RefCell<Shared>>, label: String, value: T, (min, max): (T, T)) -> Self {
         shared
             .borrow_mut()
             .message_queue
             .push_back(Box::new(common::AddRangedVar::<T> {
                 label: label.clone(),
                 value,
-                min,
-                max,
+                min_max: (min, max),
             }));
         shared.borrow_mut().components.insert(
             label.clone(),
-            Box::new(common::RangedVar::<T> { value, min, max }),
+            Box::new(common::RangedVar::<T> {
+                value,
+                min_max: (min, max),
+            }),
         );
         Self {
             shared,
@@ -347,6 +349,23 @@ impl<T: common::Number> UiRangedVar<T> {
             return Some(value);
         }
         None
+    }
+}
+
+/// 2d widget.
+pub struct UiWidget2 {
+    // label: String,
+// hared: Rc<RefCell<Shared>>,
+}
+
+impl UiWidget2 {
+    fn new(shared: Rc<RefCell<Shared>>, label: String, image: image::DynamicImage) -> Self {
+        shared
+            .borrow_mut()
+            .message_queue
+            .push_back(Box::new(common::AddWidget2 { label, image }));
+
+        Self {}
     }
 }
 
@@ -463,10 +482,9 @@ impl Manager {
         &self,
         label: String,
         value: T,
-        min: T,
-        max: T,
+        (min, max): (T, T),
     ) -> UiRangedVar<T> {
-        UiRangedVar::<T>::new(self.shared.clone(), label, value, min, max)
+        UiRangedVar::<T>::new(self.shared.clone(), label, value, (min, max))
     }
 
     /// Adds enum as combo box box to side-panel.
@@ -478,6 +496,11 @@ impl Manager {
         value: T,
     ) -> UiEnum<T> {
         UiEnum::<T>::new(self.shared.clone(), label, value)
+    }
+
+    /// Adds a new 2d widget to the main panel.
+    pub fn add_widget2(&self, label: String, image: image::DynamicImage) -> UiWidget2 {
+        UiWidget2::new(self.shared.clone(), label, image)
     }
 
     /// Adds a new 3d widget to the main panel.

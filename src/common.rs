@@ -4,6 +4,7 @@ use super::entities;
 use super::gui;
 
 use ::slice_of_array::prelude::*;
+use image::GenericImageView;
 
 /// Component such as a button or a slider.
 pub trait Component: downcast_rs::DowncastSync {
@@ -129,10 +130,8 @@ impl<T: Number> Component for Var<T> {
 pub struct RangedVar<T> {
     /// Current value.
     pub value: T,
-    /// Min bound.
-    pub min: T,
-    /// Max bound.
-    pub max: T,
+    /// Min, max bounds.
+    pub min_max: (T, T),
 }
 
 impl<T: Number> Component for RangedVar<T> {
@@ -143,7 +142,7 @@ impl<T: Number> Component for RangedVar<T> {
         sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
     ) {
         if ui
-            .add(egui::Slider::new(&mut self.value, self.min..=self.max).text(label))
+            .add(egui::Slider::new(&mut self.value, self.min_max.0..=self.min_max.1).text(label))
             .changed()
         {
             sender
@@ -210,6 +209,63 @@ mod offscreen_shader {
     #[repr(C)]
     pub struct Uniforms {
         pub mvp: nalgebra::Matrix4<f32>,
+    }
+}
+
+/// [Widget] for 2d content.
+pub struct Widget2 {
+    aspect_ratio: f32,
+    maybe_image: Option<miniquad::Texture>,
+}
+
+impl Widget2 {
+    fn from_image(ctx: &mut miniquad::Context, image: image::DynamicImage) -> Self {
+        let rgba8 = image.to_rgba8();
+        let tex = miniquad::Texture::from_rgba8(
+            ctx,
+            rgba8.width() as u16,
+            rgba8.height() as u16,
+            rgba8.as_raw(),
+        );
+        Self {
+            aspect_ratio: image.dimensions().0 as f32 / image.dimensions().1 as f32,
+            maybe_image: Some(tex),
+        }
+    }
+
+    // fn from_aspect_ratio(aspect_ratio: f32) -> Self {
+    //     Self {
+    //         aspect_ratio,
+    //         maybe_image: None,
+    //     }
+    // }
+
+    // fn from_image_size(width: f32, height: f32) -> Self {
+    //     Self::from_aspect_ratio(width / height)
+    // }
+}
+
+impl Widget for Widget2 {
+    fn render(&mut self, _ctx: &mut miniquad::Context) {}
+
+    fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        assigned_width: f32,
+        assigned_height: f32,
+    ) -> Option<egui::Response> {
+        let w = (self.aspect_ratio * assigned_height).min(assigned_width);
+        let h = w / self.aspect_ratio;
+
+        let tex = egui::TextureId::User(self.maybe_image.unwrap().gl_internal_id() as u64);
+
+        let r = ui
+            .add(egui::Image::new(tex, egui::Vec2::new(w, h)).sense(egui::Sense::click_and_drag()));
+        Some(r)
+    }
+
+    fn aspect_ratio(&self) -> f32 {
+        self.aspect_ratio
     }
 }
 
@@ -456,10 +512,8 @@ pub struct AddRangedVar<T> {
     pub label: String,
     /// Initial value.
     pub value: T,
-    /// Min bounds
-    pub min: T,
-    /// Max bounds
-    pub max: T,
+    /// Min, max bounds
+    pub min_max: (T, T),
 }
 
 impl<T: Number> ToGuiLoopMessage for AddRangedVar<T> {
@@ -468,10 +522,24 @@ impl<T: Number> ToGuiLoopMessage for AddRangedVar<T> {
             self.label,
             Box::new(RangedVar::<T> {
                 value: self.value,
-                min: self.min,
-                max: self.max,
+                min_max: self.min_max,
             }),
         );
+    }
+}
+
+/// Adds [Widget2] to main panel.
+pub struct AddWidget2 {
+    /// Name of widget
+    pub label: String,
+    /// Image to show in (background of) widget
+    pub image: image::DynamicImage,
+}
+
+impl ToGuiLoopMessage for AddWidget2 {
+    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+        data.widgets
+            .insert(self.label, Box::new(Widget2::from_image(ctx, self.image)));
     }
 }
 
