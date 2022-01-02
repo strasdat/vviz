@@ -143,20 +143,20 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
    - [x] create examples folder
    - [x] README and code comments
  - 0.2: Widget2 and Widget3 additions
-   * Widget2: to display image
-   * Widget3: add basic 3d orbital control
-   * Widget3: line segments and points
-   * start vviz book
+   - [ ] Widget2: to display image
+   - [ ] Widget3: add basic 3d orbital control
+   - [ ] Widget3: line segments and points
+   - [ ] start vviz book
  - 0.3: 2d overlays, improved controls
-   * custom projective view given pinhole camera
-   * 2d rendering
-   * 2d image control
-   * improved orbital control, using depth buffers
-   * 3d phong shading option
+   - [ ] custom projective view given pinhole camera
+   - [ ] 2d rendering
+   - [ ] 2d image control
+   - [ ] improved orbital control, using depth buffers
+   - [ ] 3d phong shading option
  - 0.4: graph plotting using PlotWidget
  - 0.5: web/remote visualization, in addition to standalone lib
-   * lib: vviz::Manger with websocket server
-   * wasm app: vviz::Gui in browser using websocket client
+   - [ ] lib: vviz::Manger with websocket server
+   - [ ] wasm app: vviz::Gui in browser using websocket client
 
 ## Acknowledgements
 
