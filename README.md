@@ -56,8 +56,8 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
         w3d.place_entity("cube".to_string(), vviz::entities::colored_cube(1.0));
         let mut scene_pose_entity = nalgebra::Isometry3::<f32>::identity();
 
-        let mut ui_delta = manager.add_ranged_value("delta".to_string(), 0.0, -1.0, 1.0);
-        let mut ui_dim = manager.add_ranged_value("dimension".to_string(), 0, 0, 2);
+        let mut ui_delta = manager.add_ranged_value("delta".to_string(), 0.0, (-1.0, 1.0));
+        let mut ui_dim = manager.add_ranged_value("dimension".to_string(), 0, (0, 2));
         let mut ui_manipulation =
             manager.add_enum("manipulation".to_string(), Manipulation::Position);
 
@@ -134,6 +134,20 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
 
 ![multi-widget example gif](media/multi_widgets.gif)
 
+### 2d widgets - to show an image
+
+```rust, no_run
+    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+        let image: image::DynamicImage = vviz::utilities::load_image_from_url(
+            "https://rustacean.net/assets/rustacean-orig-noshadow.png",
+        )
+        .unwrap();
+        manager.add_widget2("img".to_string(), image);
+        manager.sync_with_gui();
+    });
+```
+
+
 ## Roadmap
 
  - **0.1: MVP**
@@ -143,7 +157,7 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
    - [x] create examples folder
    - [x] README and code comments
  - 0.2: Widget2 and Widget3 additions
-   - [ ] Widget2: to display image
+   - [x] Widget2: to display image
    - [ ] Widget3: add basic 3d orbital control
    - [ ] Widget3: line segments and points
    - [ ] start vviz book
