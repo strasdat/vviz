@@ -23,7 +23,7 @@ pub struct PositionColorVertices {
 
 impl PositionColorVertices {
     /// Constructs a single vertex (7-array) from a position and a color.
-    fn to_array(position: nalgebra::Vector3<f32>, color: Color) -> [f32; 7] {
+    pub fn to_array(position: nalgebra::Vector3<f32>, color: Color) -> [f32; 7] {
         [
             position.x,
             position.y,
@@ -45,7 +45,7 @@ pub struct PositionUvVertices {
 
 impl PositionUvVertices {
     /// Constructs a single vertex (5-array) from a position and a texture coordinate.
-    fn to_array(position: nalgebra::Vector3<f32>, uv: nalgebra::Vector2<f32>) -> [f32; 5] {
+    pub fn to_array(position: nalgebra::Vector3<f32>, uv: nalgebra::Vector2<f32>) -> [f32; 5] {
         [position.x, position.y, position.z, uv.x, uv.y]
     }
 }
@@ -63,7 +63,7 @@ pub struct PositionUvVerticesAndTexture {
 
 /// Enumeration of possible vertex options.
 #[derive(enum_as_inner::EnumAsInner)]
-pub enum Vertices {
+pub enum MeshVertices {
     /// Colored vertices.
     PositionColor(PositionColorVertices),
     /// Position/texture coordinate vertices and texture.
@@ -83,21 +83,22 @@ impl Faces {
     }
 }
 
-/// 3d entity to be added to a `Widget3`.
-pub struct Entity3 {
+/// A 3d mesh 
+pub struct Mesh3 {
     /// The vertices.
-    pub vertices: Vertices,
+    pub vertices: MeshVertices,
     /// Faces.
     pub faces: Faces,
 }
 
-impl Entity3 {
+
+impl Mesh3 {
     fn from_position_color_vertices_and_faces(
         vertices: PositionColorVertices,
         faces: Faces,
     ) -> Self {
         Self {
-            vertices: Vertices::PositionColor(vertices),
+            vertices: MeshVertices::PositionColor(vertices),
             faces,
         }
     }
@@ -108,7 +109,7 @@ impl Entity3 {
         faces: Faces,
     ) -> Self {
         Self {
-            vertices: Vertices::PositionUvAndTexture(PositionUvVerticesAndTexture {
+            vertices: MeshVertices::PositionUvAndTexture(PositionUvVerticesAndTexture {
                 vertices,
                 texture,
             }),
@@ -116,6 +117,31 @@ impl Entity3 {
         }
     }
 }
+
+/// 3d line segments
+pub struct LineSegments3 {
+    /// The vertices.
+    pub vertices: PositionColorVertices,
+}
+
+/// 3d point cloud
+pub struct Points3 {
+    /// The vertices.
+    pub vertices: PositionColorVertices,
+}
+
+
+
+/// 3d entity to be added to a `Widget3`.
+pub enum Entity3 {
+    /// Mesh
+    Mesh(Mesh3),
+    /// Line segments
+    LineSegments(LineSegments3),
+    /// Points
+    Points(Points3)
+}
+
 
 /// A named entity has a pose, a name and - well - an [Entity3].
 pub struct NamedEntity3 {
@@ -177,7 +203,7 @@ pub fn colored_cube(scale: f32) -> Entity3 {
         [23, 22, 20],
     ]);
 
-    Entity3::from_position_color_vertices_and_faces(vertices, faces)
+    Entity3::Mesh(Mesh3::from_position_color_vertices_and_faces(vertices, faces))
 }
 
 /// A colored triangle.
@@ -219,5 +245,5 @@ pub fn colored_triangles(triangles: std::vec::Vec<ColoredTriangle>) -> Entity3 {
     for i in 0..len {
         faces.push([i * 3, i * 3 + 1, i * 3 + 2])
     }
-    Entity3::from_position_color_vertices_and_faces(vertices, Faces::new(faces))
+    Entity3::Mesh(Mesh3::from_position_color_vertices_and_faces(vertices, Faces::new(faces)))
 }

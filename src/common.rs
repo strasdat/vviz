@@ -357,41 +357,41 @@ impl Widget for Widget3 {
             miniquad::PassAction::clear_color(1.0, 1.0, 1.0, 1.),
         );
         for (_, named_entity) in &self.entities {
-            let vertex_buffer = miniquad::Buffer::immutable(
-                ctx,
-                miniquad::BufferType::VertexBuffer,
-                named_entity
-                    .entity
-                    .vertices
-                    .as_position_color()
-                    .unwrap()
-                    .vertices
-                    .flat(),
-            );
+            match &named_entity.entity {
+                entities::Entity3::Mesh(mesh) => {
+                    let vertex_buffer = miniquad::Buffer::immutable(
+                        ctx,
+                        miniquad::BufferType::VertexBuffer,
+                        mesh.vertices.as_position_color().unwrap().vertices.flat(),
+                    );
 
-            let index_buffer = miniquad::Buffer::immutable(
-                ctx,
-                miniquad::BufferType::IndexBuffer,
-                named_entity.entity.faces.indices.flat(),
-            );
+                    let index_buffer = miniquad::Buffer::immutable(
+                        ctx,
+                        miniquad::BufferType::IndexBuffer,
+                        mesh.faces.indices.flat(),
+                    );
 
-            let offscreen_bind = miniquad::Bindings {
-                vertex_buffers: vec![vertex_buffer],
-                index_buffer,
-                images: vec![],
-            };
+                    let offscreen_bind = miniquad::Bindings {
+                        vertex_buffers: vec![vertex_buffer],
+                        index_buffer,
+                        images: vec![],
+                    };
 
-            ctx.apply_pipeline(&self.offscreen_pipeline);
-            ctx.apply_bindings(&offscreen_bind);
+                    ctx.apply_pipeline(&self.offscreen_pipeline);
+                    ctx.apply_bindings(&offscreen_bind);
 
-            let vs_params = offscreen_shader::Uniforms {
-                mvp: proj
-                    * camera_pose_scene.to_matrix()
-                    * named_entity.scene_pose_entity.to_matrix(),
-            };
-            ctx.apply_uniforms(&vs_params);
+                    let vs_params = offscreen_shader::Uniforms {
+                        mvp: proj
+                            * camera_pose_scene.to_matrix()
+                            * named_entity.scene_pose_entity.to_matrix(),
+                    };
+                    ctx.apply_uniforms(&vs_params);
 
-            ctx.draw(0, named_entity.entity.faces.indices.flat().len() as i32, 1);
+                    ctx.draw(0, mesh.faces.indices.flat().len() as i32, 1);
+                }
+                entities::Entity3::LineSegments(_segments) => {}
+                entities::Entity3::Points(_points) => {}
+            }
         }
         ctx.end_render_pass();
 
