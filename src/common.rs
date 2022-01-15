@@ -273,8 +273,8 @@ impl Widget for Widget2 {
 pub struct Widget3 {
     camera_pose_scene: nalgebra::Isometry3<f32>,
     entities: linked_hash_map::LinkedHashMap<String, entities::NamedEntity3>,
-    offscreen_pipeline: miniquad::Pipeline,
-    //offscreen_bind: miniquad::Bindings,
+    mesh_pipeline: miniquad::Pipeline,
+    segments_pipeline: miniquad::Pipeline,
     offscreen_pass: miniquad::RenderPass,
     aspect_ratio: f32,
     texture_id: Option<egui::TextureId>,
@@ -311,7 +311,7 @@ impl Widget3 {
         )
         .unwrap();
 
-        let offscreen_pipeline = miniquad::Pipeline::with_params(
+        let mesh_pipeline = miniquad::Pipeline::with_params(
             ctx,
             &[miniquad::BufferLayout {
                 stride: (3 + 4) * std::mem::size_of::<f32>() as i32,
@@ -329,14 +329,33 @@ impl Widget3 {
             },
         );
 
+        let segments_pipeline = miniquad::Pipeline::with_params(
+            ctx,
+            &[miniquad::BufferLayout {
+                stride: (3 + 4) * std::mem::size_of::<f32>() as i32,
+                ..Default::default()
+            }],
+            &[
+                miniquad::VertexAttribute::new("pos", miniquad::VertexFormat::Float3),
+                miniquad::VertexAttribute::new("color0", miniquad::VertexFormat::Float4),
+            ],
+            offscreen_shader,
+            miniquad::PipelineParams {
+                depth_test: miniquad::Comparison::LessOrEqual,
+                depth_write: true,
+                primitive_type: miniquad::PrimitiveType::Lines,
+                ..Default::default()
+            },
+        );
+
         Self {
             camera_pose_scene: nalgebra::Isometry3::<f32>::from_parts(
                 nalgebra::Translation3::<f32>::new(0.0, 0.0, -4.0),
                 nalgebra::UnitQuaternion::<f32>::from_euler_angles(0.0, 0.0, 0.),
             ),
             entities: linked_hash_map::LinkedHashMap::new(),
-            offscreen_pipeline,
-            //offscreen_bind,
+            mesh_pipeline,
+            segments_pipeline,
             offscreen_pass,
             aspect_ratio: 640.0 / 480.0,
             texture_id: None,
@@ -355,41 +374,70 @@ impl Widget for Widget3 {
             miniquad::PassAction::clear_color(1.0, 1.0, 1.0, 1.),
         );
         for (_, named_entity) in &self.entities {
-            let vertex_buffer = miniquad::Buffer::immutable(
-                ctx,
-                miniquad::BufferType::VertexBuffer,
-                named_entity
-                    .entity
-                    .vertices
-                    .as_position_color()
-                    .unwrap()
-                    .vertices
-                    .flat(),
-            );
+            match &named_entity.entity {
+                entities::Entity3::Mesh(mesh) => {
+                    let vertex_buffer = miniquad::Buffer::immutable(
+                        ctx,
+                        miniquad::BufferType::VertexBuffer,
+                        mesh.vertices.as_position_color().unwrap().vertices.flat(),
+                    );
 
-            let index_buffer = miniquad::Buffer::immutable(
-                ctx,
-                miniquad::BufferType::IndexBuffer,
-                named_entity.entity.faces.indices.flat(),
-            );
+                    let index_buffer = miniquad::Buffer::immutable(
+                        ctx,
+                        miniquad::BufferType::IndexBuffer,
+                        mesh.faces.indices.flat(),
+                    );
 
-            let offscreen_bind = miniquad::Bindings {
-                vertex_buffers: vec![vertex_buffer],
-                index_buffer,
-                images: vec![],
-            };
+                    let offscreen_bind = miniquad::Bindings {
+                        vertex_buffers: vec![vertex_buffer],
+                        index_buffer,
+                        images: vec![],
+                    };
 
-            ctx.apply_pipeline(&self.offscreen_pipeline);
-            ctx.apply_bindings(&offscreen_bind);
+                    ctx.apply_pipeline(&self.mesh_pipeline);
+                    ctx.apply_bindings(&offscreen_bind);
 
-            let vs_params = offscreen_shader::Uniforms {
-                mvp: proj
-                    * self.camera_pose_scene.to_matrix()
-                    * named_entity.scene_pose_entity.to_matrix(),
-            };
-            ctx.apply_uniforms(&vs_params);
+                    let vs_params = offscreen_shader::Uniforms {
+                        mvp: proj
+                            * self.camera_pose_scene.to_matrix()
+                            * named_entity.scene_pose_entity.to_matrix(),
+                    };
+                    ctx.apply_uniforms(&vs_params);
 
-            ctx.draw(0, named_entity.entity.faces.indices.flat().len() as i32, 1);
+                    ctx.draw(0, mesh.faces.indices.flat().len() as i32, 1);
+                }
+                entities::Entity3::LineSegments(segments) => {
+                    let vertex_buffer = miniquad::Buffer::immutable(
+                        ctx,
+                        miniquad::BufferType::VertexBuffer,
+                        segments.vertices.vertices.flat(),
+                    );
+
+                    let index_buffer = miniquad::Buffer::immutable(
+                        ctx,
+                        miniquad::BufferType::IndexBuffer,
+                        segments.indices.flat(),
+                    );
+
+                    let offscreen_bind = miniquad::Bindings {
+                        vertex_buffers: vec![vertex_buffer],
+                        index_buffer,
+                        images: vec![],
+                    };
+
+                    ctx.apply_pipeline(&self.segments_pipeline);
+                    ctx.apply_bindings(&offscreen_bind);
+
+                    let vs_params = offscreen_shader::Uniforms {
+                        mvp: proj
+                            * self.camera_pose_scene.to_matrix()
+                            * named_entity.scene_pose_entity.to_matrix(),
+                    };
+                    ctx.apply_uniforms(&vs_params);
+
+                    ctx.draw(0, segments.indices.flat().len() as i32, 1);
+                }
+            }
         }
         ctx.end_render_pass();
 
@@ -423,8 +471,12 @@ impl Widget for Widget3 {
             // TODO: Calculate delta scale based on scene depth.
             let delta = 0.01 * ui.ctx().input().pointer.delta();
             let mut scene_pose_camera = self.camera_pose_scene.inverse();
-            scene_pose_camera
-                .append_translation_mut(&nalgebra::Translation3::new(-delta.x, -delta.y, 0.0));
+            let translation_update = scene_pose_camera
+                .rotation
+                .transform_vector(&nalgebra::Vector3::new(-delta.x, -delta.y, 0.0));
+            scene_pose_camera.append_translation_mut(&nalgebra::Translation3 {
+                vector: translation_update,
+            });
             self.camera_pose_scene = scene_pose_camera.inverse();
         } else if ui.ctx().input().pointer.primary_down() {
             // TODO: Rotates about scene center. Make the center point of rotation configurable.
