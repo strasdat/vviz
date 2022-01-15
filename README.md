@@ -7,7 +7,7 @@
 
 Rapid prototyping GUI, and visual printf-style debugging for computer vision development.
 
-Its core dependencies are [`egui`](https://github.com/emilk/egui) and 
+Its core dependencies are [egui](https://github.com/emilk/egui) and 
 [Miniquad](https://github.com/not-fl3/miniquad). For a full list of dependencies, please inspect the
 [Cargo.toml](Cargo.toml) file.
 
@@ -147,6 +147,23 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
     });
 ```
 
+## Goals
+ - Enabling 2d and 3d visualization for computer vision development
+ - Visual "printf-style" debugging - populating the visualizer with content
+ - User interaction by binding UI components (slider, checkbox, ...) to  primitive types (f32, bool, 
+   ...). 
+ - Minimal API surface - users are interacting with vviz through a small set of functions and 
+   structs.
+ - Targeting desktop app and browser app (in v0.5.0)
+ - Remote visualization (in v0.5.0)
+
+## Non-goals
+ - Full fledged GUI framework
+ - Aesthetics customization - e.g. precisely define location / shape of button, slider etc.
+ - Commitment to egui / miniquad for backend. The GUI and 3d rendering backend might be replaced
+   before version 1.0.0 is reached.
+ - Stable API before version 1.0.0.
+   
 
 ## Roadmap
 
@@ -159,13 +176,14 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
  - 0.2: Widget2 and Widget3 additions
    - [x] Widget2: to display image
    - [x] Widget3: add basic 3d orbital control
-   - [ ] Widget3: line segments and points
+   - [x] Widget3: line segments and points
    - [ ] start vviz book
- - 0.3: 2d overlays, improved controls
+ - 0.3: 2d overlays, improved controls & widget3 features
    - [ ] custom projective view given pinhole camera
    - [ ] 2d rendering
    - [ ] 2d image control
    - [ ] improved orbital control, using depth buffers
+   - [ ] textured mesh
    - [ ] 3d phong shading option
  - 0.4: graph plotting using PlotWidget
  - 0.5: web/remote visualization, in addition to standalone lib
@@ -174,4 +192,5 @@ Its core dependencies are [`egui`](https://github.com/emilk/egui) and
 
 ## Acknowledgements
 
-vviz is influenced by other open source projects, especially [Pangolin](https://github.com/stevenlovegrove/pangolin).
+vviz is influenced by other open source projects, especially 
+[Pangolin](https://github.com/stevenlovegrove/pangolin).
