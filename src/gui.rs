@@ -99,6 +99,8 @@ impl miniquad::EventHandler for GuiLoop {
                         max_height = h;
                     }
                 }
+                println!("{}",   egui_ctx.input().pointer.primary_down());
+
 
                 ui0.horizontal_wrapped(|ui| {
                     for (_, widget) in &mut self.data.widgets {
