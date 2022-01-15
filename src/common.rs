@@ -271,6 +271,7 @@ impl Widget for Widget2 {
 
 /// [Widget] for 3d content such as meshes, line segments and point clouds.
 pub struct Widget3 {
+    camera_pose_scene: nalgebra::Isometry3<f32>,
     entities: linked_hash_map::LinkedHashMap<String, entities::NamedEntity3>,
     offscreen_pipeline: miniquad::Pipeline,
     //offscreen_bind: miniquad::Bindings,
@@ -329,6 +330,10 @@ impl Widget3 {
         );
 
         Self {
+            camera_pose_scene: nalgebra::Isometry3::<f32>::from_parts(
+                nalgebra::Translation3::<f32>::new(0.0, 0.0, -4.0),
+                nalgebra::UnitQuaternion::<f32>::from_euler_angles(0.0, 0.0, 0.),
+            ),
             entities: linked_hash_map::LinkedHashMap::new(),
             offscreen_pipeline,
             //offscreen_bind,
@@ -342,13 +347,6 @@ impl Widget3 {
 impl Widget for Widget3 {
     fn render(&mut self, ctx: &mut miniquad::Context) {
         let proj = nalgebra_glm::perspective_fov_rh(60.0f32.to_radians(), 640.0, 480.0, 0.01, 10.0);
-
-        // TODO: implement mouse interaction / orbital control. For now the camera is placed at a
-        //       constant position looking at the scene.
-        let camera_pose_scene = nalgebra::Isometry3::<f32>::from_parts(
-            nalgebra::Translation3::<f32>::new(0.0, 0.0, -4.0),
-            nalgebra::UnitQuaternion::<f32>::from_euler_angles(0.0, 0.0, 0.),
-        );
 
         // the offscreen render pipeline, following this example:
         // https://github.com/not-fl3/egui-miniquad/blob/master/examples/render_to_egui_image.rs
@@ -386,7 +384,7 @@ impl Widget for Widget3 {
 
             let vs_params = offscreen_shader::Uniforms {
                 mvp: proj
-                    * camera_pose_scene.to_matrix()
+                    * self.camera_pose_scene.to_matrix()
                     * named_entity.scene_pose_entity.to_matrix(),
             };
             ctx.apply_uniforms(&vs_params);
@@ -420,6 +418,28 @@ impl Widget for Widget3 {
             egui::Image::new(self.texture_id.unwrap(), egui::Vec2::new(w, h))
                 .sense(egui::Sense::click_and_drag()),
         );
+
+        if ui.ctx().input().pointer.secondary_down() {
+            // TODO: Calculate delta scale based on scene depth.
+            let delta = 0.01 * ui.ctx().input().pointer.delta();
+            let mut scene_pose_camera = self.camera_pose_scene.inverse();
+            scene_pose_camera
+                .append_translation_mut(&nalgebra::Translation3::new(-delta.x, -delta.y, 0.0));
+            self.camera_pose_scene = scene_pose_camera.inverse();
+        } else if ui.ctx().input().pointer.primary_down() {
+            // TODO: Rotates about scene center. Make the center point of rotation configurable.
+            let delta = 0.01 * ui.ctx().input().pointer.delta();
+            let mut scaled_axis = nalgebra::Vector3::zeros();
+            scaled_axis.x = -delta.y;
+            scaled_axis.y = delta.x;
+
+            let scene_rot_camera = self.camera_pose_scene.rotation.inverse();
+
+            self.camera_pose_scene.rotation *= nalgebra::UnitQuaternion::from_scaled_axis(
+                scene_rot_camera.transform_vector(&scaled_axis),
+            );
+        }
+
         Some(r)
     }
 
