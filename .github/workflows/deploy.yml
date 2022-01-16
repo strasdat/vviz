@@ -21,7 +21,7 @@ jobs:
       run: |
         cd book
         mdbook build
-        git worktree add gh-pages gh-pages
+        git worktree add gh-pages
         git config user.name "Deploy from CI"
         git config user.email ""
         cd gh-pages
