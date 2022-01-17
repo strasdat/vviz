@@ -31,7 +31,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
     });
 ```
 
-![simple example image](media/simple.png)
+![simple example image](https://media.giphy.com/media/EcUl5vMa7prRt8gO6I/giphy.gif)
 
 ### Interacting with ranged values (sliders) and enums (combo boxes).
 
@@ -86,7 +86,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
     });
 ```
 
-![interaction example gif](media/interaction.gif)
+![interaction example gif](https://media.giphy.com/media/0tIFBhoJepwm8MmsV1/giphy.gif)
 
 
 ### Multiple widgets
@@ -132,7 +132,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
     });
 ```
 
-![multi-widget example gif](media/multi_widgets.gif)
+![multi-widget example gif](https://media.giphy.com/media/DHM12WLKEmh1N7bUGT/giphy.gif)
 
 ### 2d widgets - to show an image
 
@@ -145,7 +145,47 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
         manager.add_widget2("img".to_string(), image);
         manager.sync_with_gui();
     });
+    
 ```
+
+![widget2 gif](https://media.giphy.com/media/MlPcFqkBh7zhVdlQT2/giphy.gif)
+
+```rust, no_run
+    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+        let w3d = manager.add_widget3("w3d".to_string());
+        w3d.place_entity_at(
+            "axis".to_string(),
+            vviz::entities::Axis3::from_scale(1.0).into(),
+            vviz::math::rot_x(0.7),
+        );
+
+        w3d.place_entity_at(
+            "points".to_string(),
+            vviz::entities::ColoredPoints3::from_arrays_and_color(
+                vec![
+                    [0.50, 0.50, 0.5],
+                    [0.25, 0.50, 0.5],
+                    [0.50, 0.25, 0.5],
+                    [0.25, 0.25, 0.5],
+                ],
+                vviz::entities::Color {
+                    r: 1.0,
+                    g: 0.0,
+                    b: 0.0,
+                    alpha: 1.0,
+                },
+            )
+            .into(),
+            vviz::math::rot_x(0.7),
+        );
+        loop {
+            manager.sync_with_gui();
+        }
+    });
+    
+```
+
+![lines and points gif](https://media.giphy.com/media/AtBtWE7U49UKVRlQcA/giphy.gif)
 
 ## Goals
  - Enabling 2d and 3d visualization for computer vision development
