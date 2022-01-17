@@ -207,17 +207,17 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
 
 ## Roadmap
 
- - **0.1: MVP**
+ - 0.1: MVP
    - [x] components: slider, button, checkbox, combobox
    - [x] multiple widgets for 3d rendering
    - [x] CI on github
    - [x] create examples folder
    - [x] README and code comments
- - 0.2: Widget2 and Widget3 additions
+ - **0.2: Widget2 and Widget3 additions**
    - [x] Widget2: to display image
    - [x] Widget3: add basic 3d orbital control
    - [x] Widget3: line segments and points
-   - [ ] start vviz book
+   - [x] start vviz book
  - 0.3: 2d overlays, improved controls & widget3 features
    - [ ] custom projective view given pinhole camera
    - [ ] 2d rendering
