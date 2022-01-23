@@ -17,7 +17,7 @@ impl App {
         }
     }
 
-    fn spawn(mut self, f: fn(manager::Manager) -> ()) {
+    fn spawn(mut self, f: impl FnOnce(manager::Manager) + Send + 'static) {
         let (to_gui_loop_sender, to_gui_loop_receiver) = std::sync::mpsc::channel();
         self.to_gui_loop_receiver = Some(to_gui_loop_receiver);
 
@@ -69,7 +69,7 @@ impl App {
 ///     }
 /// });
 /// ```
-pub fn spawn(f: fn(manager::Manager) -> ()) {
+pub fn spawn(f: impl FnOnce(manager::Manager) + Send + 'static) {
     let vviz = App::new();
     vviz.spawn(f)
 }
