@@ -8,7 +8,7 @@ keywords = ["gui", "vision", "image", "2d", "3d"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/strasdat/vviz/"
-version = "0.2.0"
+version = "0.2.1"
 include = [
     "**/*.rs",
     "Cargo.toml",
