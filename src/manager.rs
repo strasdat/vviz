@@ -6,13 +6,16 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::mpsc;
 
+use crate::common::FromGuiLoopMessage;
+use crate::common::ToGuiLoopMessage;
+
 use super::common;
 use super::entities;
 
 /// Shared data between the varies ui structs such [UiButton], [UiWidget3] and [UiVar<T>].
 pub struct Shared {
     components: LinkedHashMap<String, Box<dyn common::Component>>,
-    message_queue: std::collections::VecDeque<Box<dyn common::ToGuiLoopMessage>>,
+    message_queue: std::collections::VecDeque<common::ToGuiLoopMessage>,
 }
 
 impl Default for Shared {
@@ -24,13 +27,25 @@ impl Default for Shared {
     }
 }
 
+struct LocalConnection {}
+
+struct WebsocketServerConnection {
+    thread_join_handle: std::thread::JoinHandle<()>,
+}
+
+enum ManagerConnection {
+    Local(LocalConnection),
+    WebsocketServer(WebsocketServerConnection),
+}
+
 /// The users employ the [Manager] to add [super::common::Component]s and [super::common::Widget]s
 /// to the gui, and receive state updates.
 ///
 /// It communicates with [super::gui::GuiLoop] through sender and receiver structs.
 pub struct Manager {
-    to_gui_loop_sender: mpsc::Sender<Box<dyn common::ToGuiLoopMessage>>,
-    from_gui_loop_receiver: mpsc::Receiver<Box<dyn common::FromGuiLoopMessage>>,
+    to_gui_loop_sender: mpsc::Sender<common::ToGuiLoopMessage>,
+    from_gui_loop_receiver: mpsc::Receiver<common::FromGuiLoopMessage>,
+    connection: ManagerConnection,
     shared: Rc<RefCell<Shared>>,
 }
 
@@ -55,11 +70,13 @@ impl<
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddEnumStringRepr {
-                label: label.clone(),
-                value: value.to_string(),
-                values: values_map.clone(),
-            }));
+            .push_back(ToGuiLoopMessage::AddEnumStringRepr(
+                common::AddEnumStringRepr {
+                    label: label.clone(),
+                    value: value.to_string(),
+                    values: values_map.clone(),
+                },
+            ));
 
         shared.borrow_mut().components.insert(
             label.clone(),
@@ -130,7 +147,7 @@ impl UiButton {
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddButton {
+            .push_back(ToGuiLoopMessage::AddButton(common::AddButton {
                 label: label.clone(),
             }));
         shared
@@ -180,7 +197,7 @@ impl UiVar<bool> {
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddVar::<bool> {
+            .push_back(ToGuiLoopMessage::AddVarBool(common::AddVar::<bool> {
                 label: label.clone(),
                 value,
             }));
@@ -234,10 +251,7 @@ impl<T: common::Number> UiVar<T> {
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddVar::<T> {
-                label: label.clone(),
-                value,
-            }));
+            .push_back(value.add_var_message(label.clone()));
         shared
             .borrow_mut()
             .components
@@ -298,11 +312,7 @@ impl<T: common::Number> UiRangedVar<T> {
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddRangedVar::<T> {
-                label: label.clone(),
-                value,
-                min_max: (min, max),
-            }));
+            .push_back(value.add_ranged_var_message(label.clone(), (min, max)));
         shared.borrow_mut().components.insert(
             label.clone(),
             Box::new(common::RangedVar::<T> {
@@ -359,11 +369,22 @@ pub struct UiWidget2 {
 }
 
 impl UiWidget2 {
-    fn new(shared: Rc<RefCell<Shared>>, label: String, image: image::DynamicImage) -> Self {
+    fn new(
+        shared: Rc<RefCell<Shared>>,
+        label: String,
+        rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
+    ) -> Self {
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddWidget2 { label, image }));
+            .push_back(ToGuiLoopMessage::AddWidget2(common::AddWidget2 {
+                label,
+                image: common::ImageRgba8 {
+                    width: rgba8.width(),
+                    height: rgba8.height(),
+                    bytes: rgba8.into_raw(),
+                },
+            }));
 
         Self {}
     }
@@ -380,7 +401,7 @@ impl UiWidget3 {
         shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::AddWidget3 {
+            .push_back(ToGuiLoopMessage::AddWidget3(common::AddWidget3 {
                 label: label.clone(),
             }));
 
@@ -393,7 +414,7 @@ impl UiWidget3 {
         self.shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::PlaceEntity3 {
+            .push_back(ToGuiLoopMessage::PlaceEntity3(common::PlaceEntity3 {
                 widget_label: self.label.clone(),
                 named_entity: entities::NamedEntity3 {
                     label,
@@ -417,7 +438,7 @@ impl UiWidget3 {
         self.shared
             .borrow_mut()
             .message_queue
-            .push_back(Box::new(common::PlaceEntity3 {
+            .push_back(ToGuiLoopMessage::PlaceEntity3(common::PlaceEntity3 {
                 widget_label: self.label.clone(),
                 named_entity: entities::NamedEntity3 {
                     label,
@@ -438,26 +459,67 @@ impl UiWidget3 {
         label: String,
         scene_pose_entity: nalgebra::Isometry3<f32>,
     ) {
-        self.shared.borrow_mut().message_queue.push_back(Box::new(
-            common::UpdateScenePoseEntity3 {
-                widget_label: self.label.clone(),
-                entity_label: label,
-                scene_pose_entity,
-            },
-        ));
+        self.shared
+            .borrow_mut()
+            .message_queue
+            .push_back(ToGuiLoopMessage::UpdateScenePoseEntity3(
+                common::UpdateScenePoseEntity3 {
+                    widget_label: self.label.clone(),
+                    entity_label: label,
+                    scene_pose_entity,
+                },
+            ));
     }
 }
 
 impl Manager {
     /// Constructs [Manager] from sender/receiver. This usually needs not be called by the user,
     /// since it is constructed by the [super::app].
-    pub fn new(
-        to_gui_loop_sender: mpsc::Sender<Box<dyn common::ToGuiLoopMessage>>,
-        from_gui_loop_receiver: mpsc::Receiver<Box<dyn common::FromGuiLoopMessage>>,
+    pub fn new_local(
+        to_gui_loop_sender: mpsc::Sender<common::ToGuiLoopMessage>,
+        from_gui_loop_receiver: mpsc::Receiver<common::FromGuiLoopMessage>,
     ) -> Self {
         Self {
             to_gui_loop_sender,
             from_gui_loop_receiver,
+            connection: ManagerConnection::Local(LocalConnection {}),
+            shared: Rc::new(RefCell::new(Shared::default())),
+        }
+    }
+
+    pub fn new_remote() -> Self {
+        let listener = std::net::TcpListener::bind("127.0.0.1:9001").unwrap();
+
+        let mut websocket = tungstenite::accept(listener.accept().unwrap().0).unwrap();
+        let (to_gui_loop_sender, to_gui_loop_receiver) = std::sync::mpsc::channel();
+        let (from_gui_loop_sender, from_gui_loop_receiver) = std::sync::mpsc::channel();
+
+        let thread_join_handle = std::thread::spawn(move || loop {
+            let msg = websocket.read_message().unwrap();
+
+            let from_msg: Vec<FromGuiLoopMessage> =
+                serde_json::from_str(msg.to_text().unwrap()).unwrap();
+            for m in from_msg {
+                from_gui_loop_sender.send(m).unwrap();
+            }
+
+            let collection: Vec<ToGuiLoopMessage> = to_gui_loop_receiver.try_iter().collect();
+
+            websocket
+                .write_message(tungstenite::Message::Text(
+                    serde_json::to_string(&collection).unwrap(),
+                ))
+                .unwrap();
+
+            std::thread::sleep(std::time::Duration::from_millis(15));
+        });
+
+        Self {
+            to_gui_loop_sender,
+            from_gui_loop_receiver,
+            connection: ManagerConnection::WebsocketServer(WebsocketServerConnection {
+                thread_join_handle,
+            }),
             shared: Rc::new(RefCell::new(Shared::default())),
         }
     }
@@ -499,7 +561,11 @@ impl Manager {
     }
 
     /// Adds a new 2d widget to the main panel.
-    pub fn add_widget2(&self, label: String, image: image::DynamicImage) -> UiWidget2 {
+    pub fn add_widget2(
+        &self,
+        label: String,
+        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
+    ) -> UiWidget2 {
         UiWidget2::new(self.shared.clone(), label, image)
     }
 

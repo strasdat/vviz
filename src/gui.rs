@@ -24,8 +24,8 @@ impl Default for GuiData {
 /// Structure which holds data for main gui loop.
 pub struct GuiLoop {
     egui_mq: egui_miniquad::EguiMq,
-    to_gui_loop_receiver: mpsc::Receiver<Box<dyn common::ToGuiLoopMessage>>,
-    from_gui_loop_sender: mpsc::Sender<Box<dyn common::FromGuiLoopMessage>>,
+    to_gui_loop_receiver: mpsc::Receiver<common::ToGuiLoopMessage>,
+    from_gui_loop_sender: mpsc::Sender<common::FromGuiLoopMessage>,
     data: GuiData,
 }
 
@@ -33,8 +33,8 @@ impl GuiLoop {
     /// Creates `GuiLoop` given `miniquad::Context` and sender/receiver structs.
     pub fn new(
         ctx: &mut miniquad::Context,
-        to_gui_loop_receiver: mpsc::Receiver<Box<dyn common::ToGuiLoopMessage>>,
-        from_gui_loop_sender: mpsc::Sender<Box<dyn common::FromGuiLoopMessage>>,
+        to_gui_loop_receiver: mpsc::Receiver<common::ToGuiLoopMessage>,
+        from_gui_loop_sender: mpsc::Sender<common::FromGuiLoopMessage>,
     ) -> GuiLoop {
         GuiLoop {
             egui_mq: egui_miniquad::EguiMq::new(ctx),

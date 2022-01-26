@@ -5,8 +5,8 @@ use super::gui;
 use super::manager;
 
 struct App {
-    to_gui_loop_receiver: Option<std::sync::mpsc::Receiver<Box<dyn common::ToGuiLoopMessage>>>,
-    from_gui_loop_sender: Option<std::sync::mpsc::Sender<Box<dyn common::FromGuiLoopMessage>>>,
+    to_gui_loop_receiver: Option<std::sync::mpsc::Receiver<common::ToGuiLoopMessage>>,
+    from_gui_loop_sender: Option<std::sync::mpsc::Sender<common::FromGuiLoopMessage>>,
 }
 
 impl App {
@@ -25,7 +25,7 @@ impl App {
         self.from_gui_loop_sender = Some(from_gui_loop_sender);
 
         std::thread::spawn(move || {
-            let manager = manager::Manager::new(to_gui_loop_sender, from_gui_loop_receiver);
+            let manager = manager::Manager::new_local(to_gui_loop_sender, from_gui_loop_receiver);
             f(manager);
         });
         self.block_on_gui_loop();
@@ -72,4 +72,9 @@ impl App {
 pub fn spawn(f: impl FnOnce(manager::Manager) + Send + 'static) {
     let vviz = App::new();
     vviz.spawn(f)
+}
+
+pub fn spawn_remote(f: impl FnOnce(manager::Manager) + Send + 'static) {
+    let manager = manager::Manager::new_remote();
+    f(manager);
 }

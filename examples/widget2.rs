@@ -4,7 +4,7 @@ fn main() {
             "https://rustacean.net/assets/rustacean-orig-noshadow.png",
         )
         .unwrap();
-        manager.add_widget2("img".to_string(), image);
+        manager.add_widget2("img".to_string(), image.into_rgba8());
         manager.sync_with_gui();
     });
 }

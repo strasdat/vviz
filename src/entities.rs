@@ -1,9 +1,11 @@
 //! 2d and 3d entities to be added to a [super::common::Widget].
 
 #![allow(dead_code)]
+use serde::{Deserialize, Serialize};
 
 /// Color.
 #[repr(C)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Color {
     /// red [0..1]
     pub r: f32,
@@ -16,7 +18,7 @@ pub struct Color {
 }
 
 /// Colored vertices.
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct PositionColorVertices {
     /// Vector of vertices of position (3 elements) and color (4 elements)
     pub vertices: std::vec::Vec<[f32; 7]>,
@@ -39,6 +41,7 @@ impl PositionColorVertices {
 
 /// Position and texture coordinate vertices.
 #[repr(C)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PositionUvVertices {
     /// Vector of vertices of position (3 elements) and texture coordinate (2 elements)
     pub vertices: std::vec::Vec<[f32; 5]>,
@@ -52,9 +55,11 @@ impl PositionUvVertices {
 }
 
 /// A texture.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Texture {}
 
 /// Position/texture coordinate vertices and texture.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PositionUvVerticesAndTexture {
     /// The vertices.
     pub vertices: PositionUvVertices,
@@ -63,7 +68,7 @@ pub struct PositionUvVerticesAndTexture {
 }
 
 /// Enumeration of possible vertex options.
-#[derive(enum_as_inner::EnumAsInner)]
+#[derive(enum_as_inner::EnumAsInner, Serialize, Deserialize, Debug)]
 pub enum MeshVertices {
     /// Colored vertices.
     PositionColor(PositionColorVertices),
@@ -73,6 +78,7 @@ pub enum MeshVertices {
 
 /// Triangle faces.
 #[repr(C)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Faces {
     /// Vector of triangle faces (3-array). A triangle face consists of three vertex indices.
     pub indices: std::vec::Vec<[i16; 3]>,
@@ -85,6 +91,7 @@ impl Faces {
 }
 
 /// A 3d mesh
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Mesh3 {
     /// The vertices.
     pub vertices: MeshVertices,
@@ -119,6 +126,7 @@ impl Mesh3 {
 }
 
 /// 3d line segments
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LineSegments3 {
     /// The vertices.
     pub vertices: PositionColorVertices,
@@ -128,6 +136,7 @@ pub struct LineSegments3 {
 }
 
 /// 3d entity to be added to a `Widget3`.
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Entity3 {
     /// Mesh
     Mesh(Mesh3),
@@ -138,6 +147,7 @@ pub enum Entity3 {
 }
 
 /// A named entity has a pose, a name and - well - an [Entity3].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NamedEntity3 {
     /// The name.
     pub label: String,
