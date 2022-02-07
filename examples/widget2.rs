@@ -1,5 +1,8 @@
 fn main() {
-    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    use clap::Parser;
+    let args = vviz::app::Args::parse();
+
+    vviz::app::spawn(args.mode, |mut manager: vviz::manager::Manager| {
         let image: image::DynamicImage = vviz::utilities::load_image_from_url(
             "https://rustacean.net/assets/rustacean-orig-noshadow.png",
         )

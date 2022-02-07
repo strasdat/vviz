@@ -503,9 +503,13 @@ impl Widget for Widget3 {
 pub trait Number:
     egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display + serde::Serialize
 {
+    /// AddVar message.
     fn add_var_message(self, label: String) -> ToGuiLoopMessage;
+
+    /// AddRangedVar message.
     fn add_ranged_var_message(self, label: String, min_max: (Self, Self)) -> ToGuiLoopMessage;
 
+    /// UpdateRangedValue message
     fn update_range_value_message(self, label: String) -> FromGuiLoopMessage;
 }
 
@@ -603,23 +607,41 @@ impl Number for f64 {
 /// widget.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ToGuiLoopMessage {
+    /// enum combobox
     AddEnumStringRepr(AddEnumStringRepr),
+    /// button
     AddButton(AddButton),
+    /// bool checkbox
     AddVarBool(AddVar<bool>),
+    /// usize textbox
     AddVarUSize(AddVar<usize>),
+    /// i32 textbox
     AddVarI32(AddVar<i32>),
+    /// i64 textbox
     AddVarI64(AddVar<i64>),
+    /// f32 textbox
     AddVarF32(AddVar<f32>),
+    /// f64 textbox
     AddVarF64(AddVar<f64>),
+    /// usize slider
     AddRangedVarUSize(AddRangedVar<usize>),
+    /// i32 textbox
     AddRangedVarI32(AddRangedVar<i32>),
+    /// i64 textbox
     AddRangedVarI64(AddRangedVar<i64>),
+    /// f32 textbox
     AddRangedVarF32(AddRangedVar<f32>),
+    /// f64 textbox
     AddRangedVarF64(AddRangedVar<f64>),
+    /// 2d widget
     AddWidget2(AddWidget2),
+    /// 3d widget
     AddWidget3(AddWidget3),
+    /// place 3d entity
     PlaceEntity3(PlaceEntity3),
+    /// delete component
     DeleteComponent(DeleteComponent),
+    /// update pose of 3d entity
     UpdateScenePoseEntity3(UpdateScenePoseEntity3),
 }
 
@@ -774,10 +796,14 @@ impl<T: Number> AddRangedVar<T> {
     }
 }
 
+/// u8 RGBA image
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ImageRgba8 {
+    /// raw bytes
     pub bytes: Vec<u8>,
+    /// image width
     pub width: u32,
+    /// image height
     pub height: u32,
 }
 
@@ -878,13 +904,21 @@ impl DeleteComponent {
 /// Message from [super::gui::GuiLoop] to [super::manager::Manager].
 #[derive(Serialize, Deserialize, Debug)]
 pub enum FromGuiLoopMessage {
+    /// enum combobox update
     UpdateEnumStringRepr(UpdateEnumStringRepr),
+    /// bool checkbox update
     UpdateValueBool(UpdateValue<bool>),
+    /// usize slider update
     UpdateRangedValueUSize(UpdateRangedValue<usize>),
+    /// i32 slider update
     UpdateRangedValueI32(UpdateRangedValue<i32>),
+    /// i64 slider update
     UpdateRangedValueI64(UpdateRangedValue<i64>),
+    /// f32 slider update
     UpdateRangedValueF32(UpdateRangedValue<f32>),
+    /// f64 slider update
     UpdateRangedValueF64(UpdateRangedValue<f64>),
+    /// button update
     UpdateButton(UpdateButton),
 }
 

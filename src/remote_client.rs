@@ -11,7 +11,7 @@ fn main() {
     };
 
     std::thread::spawn(move || {
-        let (mut socket, response) =
+        let (mut socket, _response) =
             tungstenite::connect(reqwest::Url::parse("ws://localhost:9001").unwrap())
                 .expect("Can't connect");
 

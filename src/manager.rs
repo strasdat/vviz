@@ -30,7 +30,7 @@ impl Default for Shared {
 struct LocalConnection {}
 
 struct WebsocketServerConnection {
-    thread_join_handle: std::thread::JoinHandle<()>,
+    _thread_join_handle: std::thread::JoinHandle<()>,
 }
 
 enum ManagerConnection {
@@ -45,7 +45,7 @@ enum ManagerConnection {
 pub struct Manager {
     to_gui_loop_sender: mpsc::Sender<common::ToGuiLoopMessage>,
     from_gui_loop_receiver: mpsc::Receiver<common::FromGuiLoopMessage>,
-    connection: ManagerConnection,
+    _connection: ManagerConnection,
     shared: Rc<RefCell<Shared>>,
 }
 
@@ -473,8 +473,8 @@ impl UiWidget3 {
 }
 
 impl Manager {
-    /// Constructs [Manager] from sender/receiver. This usually needs not be called by the user,
-    /// since it is constructed by the [super::app].
+    /// Constructs local [Manager] from sender/receiver. This usually needs not be called by the
+    /// user, since it is constructed by the [super::app].
     pub fn new_local(
         to_gui_loop_sender: mpsc::Sender<common::ToGuiLoopMessage>,
         from_gui_loop_receiver: mpsc::Receiver<common::FromGuiLoopMessage>,
@@ -482,11 +482,13 @@ impl Manager {
         Self {
             to_gui_loop_sender,
             from_gui_loop_receiver,
-            connection: ManagerConnection::Local(LocalConnection {}),
+            _connection: ManagerConnection::Local(LocalConnection {}),
             shared: Rc::new(RefCell::new(Shared::default())),
         }
     }
 
+    /// Constructs remote [Manager] from sender/receiver. This usually needs not be called by the
+    /// user, since it is constructed by the [super::app].
     pub fn new_remote() -> Self {
         let listener = std::net::TcpListener::bind("127.0.0.1:9001").unwrap();
 
@@ -517,8 +519,8 @@ impl Manager {
         Self {
             to_gui_loop_sender,
             from_gui_loop_receiver,
-            connection: ManagerConnection::WebsocketServer(WebsocketServerConnection {
-                thread_join_handle,
+            _connection: ManagerConnection::WebsocketServer(WebsocketServerConnection {
+                _thread_join_handle: thread_join_handle,
             }),
             shared: Rc::new(RefCell::new(Shared::default())),
         }

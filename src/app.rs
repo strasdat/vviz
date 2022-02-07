@@ -1,5 +1,7 @@
 //! The app entry point.
 
+use clap::Parser;
+
 use super::common;
 use super::gui;
 use super::manager;
@@ -49,7 +51,25 @@ impl App {
     }
 }
 
-/// This spawns the main application thread - which one whishes to visually/interactively debug.
+/// Visualization mode
+#[derive(Clone, Debug, PartialEq, clap::ArgEnum)]
+pub enum VVizMode {
+    /// Create a local GUI window and render loop for visualization.
+    Local,
+    /// Connect via websocket to remote app.
+    Remote,
+}
+
+/// Application arguments
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+pub struct Args {
+    /// visualization mode
+    #[clap(short, long, arg_enum)]
+    pub mode: VVizMode,
+}
+
+/// This spawns the application thread - which one whishes to visually/interactively debug.
 ///
 /// Example
 /// ``` no_run
@@ -69,12 +89,15 @@ impl App {
 ///     }
 /// });
 /// ```
-pub fn spawn(f: impl FnOnce(manager::Manager) + Send + 'static) {
-    let vviz = App::new();
-    vviz.spawn(f)
-}
-
-pub fn spawn_remote(f: impl FnOnce(manager::Manager) + Send + 'static) {
-    let manager = manager::Manager::new_remote();
-    f(manager);
+pub fn spawn(mode: VVizMode, f: impl FnOnce(manager::Manager) + Send + 'static) {
+    match mode {
+        VVizMode::Local => {
+            let vviz = App::new();
+            vviz.spawn(f);
+        }
+        VVizMode::Remote => {
+            let manager = manager::Manager::new_remote();
+            f(manager);
+        }
+    }
 }

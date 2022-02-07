@@ -1,4 +1,7 @@
 fn main() {
+    use clap::Parser;
+    let args = vviz::app::Args::parse();
+
     #[derive(
         Clone,
         Debug,
@@ -14,7 +17,7 @@ fn main() {
 
     let manipulation = Manipulation::Position;
 
-    vviz::app::spawn_remote(move |mut manager: vviz::manager::Manager| {
+    vviz::app::spawn(args.mode, move |mut manager: vviz::manager::Manager| {
         let w3d = manager.add_widget3("w3d".to_string());
 
         w3d.place_entity("cube".to_string(), vviz::entities::colored_cube(1.0));
