@@ -581,7 +581,7 @@ impl Manager {
     ///
     /// Example
     /// ``` no_run
-    /// vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    /// vviz::app::spawn(vviz::app::VVizMode::Local, |mut manager: vviz::manager::Manager| {
     ///     let mut ui_a_button = manager.add_button("a button".to_string());
     ///     loop {
     ///        if ui_a_button.was_pressed() {

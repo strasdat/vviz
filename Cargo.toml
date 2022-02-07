@@ -8,19 +8,19 @@ keywords = ["gui", "vision", "image", "2d", "3d"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/strasdat/vviz/"
-version = "0.2.1"
+version = "0.3.0"
 include = [
     "**/*.rs",
     "Cargo.toml",
 ]
 
 [dependencies] 
-clap = { version = "3.0.14", features = ["derive"] }
+clap = { version = "3.0", features = ["derive"] }
 downcast-rs = "1.2"
 egui = "0.16"
 egui-miniquad = "0.8"
 enum-as-inner = "0.3"
-image = "0.24.0"
+image = "0.24"
 linked-hash-map = "0.5"
 miniquad = { version = "=0.3.0-alpha.43" }
 slice-of-array = "0.3"

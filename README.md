@@ -18,7 +18,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
 
 
 ```rust, no_run
-    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    vviz::app::spawn(vviz::app::VVizMode::Local, |mut manager: vviz::manager::Manager| {
         let w3d = manager.add_widget3("w3d".to_string());
         w3d.place_entity_at(
             "cube".to_string(),
@@ -50,7 +50,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
         Orientation,
     }
 
-    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    vviz::app::spawn(vviz::app::VVizMode::Local, |mut manager: vviz::manager::Manager| {
         let w3d = manager.add_widget3("w3d".to_string());
 
         w3d.place_entity("cube".to_string(), vviz::entities::colored_cube(1.0));
@@ -93,7 +93,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
 
 
 ```rust, no_run
-    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    vviz::app::spawn(vviz::app::VVizMode::Local, |mut manager: vviz::manager::Manager| {
         let w3d = manager.add_widget3("w3d".to_string());
         w3d.place_entity_at(
             "cube".to_string(),
@@ -137,12 +137,12 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
 ### 2d widgets - to show an image
 
 ```rust, no_run
-    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    vviz::app::spawn(vviz::app::VVizMode::Local, |mut manager: vviz::manager::Manager| {
         let image: image::DynamicImage = vviz::utilities::load_image_from_url(
             "https://rustacean.net/assets/rustacean-orig-noshadow.png",
         )
         .unwrap();
-        manager.add_widget2("img".to_string(), image);
+        manager.add_widget2("img".to_string(), image.into_rgba8());
         manager.sync_with_gui();
     });
     
@@ -151,7 +151,7 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
 ![widget2 gif](https://media.giphy.com/media/MlPcFqkBh7zhVdlQT2/giphy.gif)
 
 ```rust, no_run
-    vviz::app::spawn(|mut manager: vviz::manager::Manager| {
+    vviz::app::spawn(vviz::app::VVizMode::Local, |mut manager: vviz::manager::Manager| {
         let w3d = manager.add_widget3("w3d".to_string());
         w3d.place_entity_at(
             "axis".to_string(),
@@ -185,17 +185,19 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
     
 ```
 
+### Lines and points
+
 ![lines and points gif](https://media.giphy.com/media/AtBtWE7U49UKVRlQcA/giphy.gif)
 
 ## Goals
  - Enabling 2d and 3d visualization for computer vision development
- - Visual "printf-style" debugging - populating the visualizer with content
+ - Visual "printf-style" debugging
  - User interaction by binding UI components (slider, checkbox, ...) to  primitive types (f32, bool, 
    ...). 
  - Minimal API surface - users are interacting with vviz through a small set of functions and 
    structs.
- - Targeting desktop app and browser app (in v0.5.0)
- - Remote visualization (in v0.5.0)
+ - Remote visualization
+ - Targeting desktop app and browser app (in v0.6.0)
 
 ## Non-goals
  - Full fledged GUI framework
@@ -213,21 +215,23 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
    - [x] CI on github
    - [x] create examples folder
    - [x] README and code comments
- - **0.2: Widget2 and Widget3 additions**
+ - 0.2: Widget2 and Widget3 additions
    - [x] Widget2: to display image
    - [x] Widget3: add basic 3d orbital control
    - [x] Widget3: line segments and points
    - [x] start vviz book
- - 0.3: 2d overlays, improved controls & widget3 features
+ - **0.3: remote visualization**
+   - [x] remote vviz::Manger with websocket server
+   - [x] remote visualization client
+ - 0.4: 2d overlays, improved controls & widget3 features
    - [ ] custom projective view given pinhole camera
    - [ ] 2d rendering
    - [ ] 2d image control
    - [ ] improved orbital control, using depth buffers
    - [ ] textured mesh
    - [ ] 3d phong shading option
- - 0.4: graph plotting using PlotWidget
- - 0.5: web/remote visualization, in addition to standalone lib
-   - [ ] lib: vviz::Manger with websocket server
+ - 0.5: graph plotting using PlotWidget
+ - 0.6: web visualization, in addition to desktop lib
    - [ ] wasm app: vviz::Gui in browser using websocket client
 
 ## Acknowledgements
