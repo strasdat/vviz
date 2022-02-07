@@ -4,7 +4,7 @@ use super::entities;
 use super::gui;
 
 use ::slice_of_array::prelude::*;
-use image::GenericImageView;
+use serde::{Deserialize, Serialize};
 
 /// Component such as a button or a slider.
 pub trait Component: downcast_rs::DowncastSync {
@@ -13,7 +13,7 @@ pub trait Component: downcast_rs::DowncastSync {
         &mut self,
         label: &str,
         ui: &mut egui::Ui,
-        sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+        sender: &mut std::sync::mpsc::Sender<FromGuiLoopMessage>,
     );
 }
 
@@ -38,7 +38,7 @@ impl Component for EnumStringRepr {
         &mut self,
         label: &str,
         ui: &mut egui::Ui,
-        sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+        sender: &mut std::sync::mpsc::Sender<FromGuiLoopMessage>,
     ) {
         let mut selected = self.value.clone();
 
@@ -53,10 +53,12 @@ impl Component for EnumStringRepr {
         if *self.value != selected {
             self.value = selected.to_string();
             sender
-                .send(Box::new(UpdateEnumStringRepr {
-                    label: label.to_string(),
-                    value: self.value.clone(),
-                }))
+                .send(FromGuiLoopMessage::UpdateEnumStringRepr(
+                    UpdateEnumStringRepr {
+                        label: label.to_string(),
+                        value: self.value.clone(),
+                    },
+                ))
                 .unwrap();
         }
     }
@@ -75,11 +77,11 @@ impl Component for Var<bool> {
         &mut self,
         label: &str,
         ui: &mut egui::Ui,
-        sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+        sender: &mut std::sync::mpsc::Sender<FromGuiLoopMessage>,
     ) {
         if ui.checkbox(&mut self.value, label).changed() {
             sender
-                .send(Box::new(UpdateValue {
+                .send(FromGuiLoopMessage::UpdateValueBool(UpdateValue {
                     label: label.to_string(),
                     value: self.value,
                 }))
@@ -101,11 +103,11 @@ impl Component for Button {
         &mut self,
         label: &str,
         ui: &mut egui::Ui,
-        sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+        sender: &mut std::sync::mpsc::Sender<FromGuiLoopMessage>,
     ) {
         if ui.button(label).clicked() {
             sender
-                .send(Box::new(UpdateButton {
+                .send(FromGuiLoopMessage::UpdateButton(UpdateButton {
                     label: label.to_string(),
                 }))
                 .unwrap();
@@ -118,7 +120,7 @@ impl<T: Number> Component for Var<T> {
         &mut self,
         label: &str,
         ui: &mut egui::Ui,
-        _sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+        _sender: &mut std::sync::mpsc::Sender<FromGuiLoopMessage>,
     ) {
         ui.label(format!("{}: {}", label, self.value));
     }
@@ -139,17 +141,14 @@ impl<T: Number> Component for RangedVar<T> {
         &mut self,
         label: &str,
         ui: &mut egui::Ui,
-        sender: &mut std::sync::mpsc::Sender<Box<dyn FromGuiLoopMessage>>,
+        sender: &mut std::sync::mpsc::Sender<FromGuiLoopMessage>,
     ) {
         if ui
             .add(egui::Slider::new(&mut self.value, self.min_max.0..=self.min_max.1).text(label))
             .changed()
         {
             sender
-                .send(Box::new(UpdateRangedValue {
-                    label: label.to_string(),
-                    value: self.value,
-                }))
+                .send(self.value.update_range_value_message(label.to_owned()))
                 .unwrap();
         }
     }
@@ -219,16 +218,15 @@ pub struct Widget2 {
 }
 
 impl Widget2 {
-    fn from_image(ctx: &mut miniquad::Context, image: image::DynamicImage) -> Self {
-        let rgba8 = image.to_rgba8();
+    fn from_image(ctx: &mut miniquad::Context, rgba8: ImageRgba8) -> Self {
         let tex = miniquad::Texture::from_rgba8(
             ctx,
-            rgba8.width() as u16,
-            rgba8.height() as u16,
-            rgba8.as_raw(),
+            rgba8.width as u16,
+            rgba8.height as u16,
+            rgba8.bytes.as_slice(),
         );
         Self {
-            aspect_ratio: image.dimensions().0 as f32 / image.dimensions().1 as f32,
+            aspect_ratio: rgba8.width as f32 / rgba8.height as f32,
             maybe_image: Some(tex),
         }
     }
@@ -502,22 +500,217 @@ impl Widget for Widget3 {
 
 /// Integer or floating point number.
 
-pub trait Number: egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display {}
+pub trait Number:
+    egui::emath::Numeric + downcast_rs::DowncastSync + std::fmt::Display + serde::Serialize
+{
+    /// AddVar message.
+    fn add_var_message(self, label: String) -> ToGuiLoopMessage;
 
-impl Number for usize {}
-impl Number for i32 {}
-impl Number for i64 {}
-impl Number for f32 {}
-impl Number for f64 {}
+    /// AddRangedVar message.
+    fn add_ranged_var_message(self, label: String, min_max: (Self, Self)) -> ToGuiLoopMessage;
+
+    /// UpdateRangedValue message
+    fn update_range_value_message(self, label: String) -> FromGuiLoopMessage;
+}
+
+impl Number for usize {
+    fn add_var_message(self, label: String) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddVarUSize(AddVar::<usize> { label, value: self })
+    }
+
+    fn add_ranged_var_message(self, label: String, min_max: (usize, usize)) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddRangedVarUSize(AddRangedVar::<usize> {
+            label,
+            min_max,
+            value: self,
+        })
+    }
+
+    fn update_range_value_message(self, label: String) -> FromGuiLoopMessage {
+        FromGuiLoopMessage::UpdateRangedValueUSize(UpdateRangedValue { label, value: self })
+    }
+}
+
+impl Number for i32 {
+    fn add_var_message(self, label: String) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddVarI32(AddVar::<i32> { label, value: self })
+    }
+
+    fn add_ranged_var_message(self, label: String, min_max: (i32, i32)) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddRangedVarI32(AddRangedVar::<i32> {
+            label,
+            min_max,
+            value: self,
+        })
+    }
+
+    fn update_range_value_message(self, label: String) -> FromGuiLoopMessage {
+        FromGuiLoopMessage::UpdateRangedValueI32(UpdateRangedValue { label, value: self })
+    }
+}
+
+impl Number for i64 {
+    fn add_var_message(self, label: String) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddVarI64(AddVar::<i64> { label, value: self })
+    }
+
+    fn add_ranged_var_message(self, label: String, min_max: (i64, i64)) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddRangedVarI64(AddRangedVar::<i64> {
+            label,
+            min_max,
+            value: self,
+        })
+    }
+
+    fn update_range_value_message(self, label: String) -> FromGuiLoopMessage {
+        FromGuiLoopMessage::UpdateRangedValueI64(UpdateRangedValue { label, value: self })
+    }
+}
+
+impl Number for f32 {
+    fn add_var_message(self, label: String) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddVarF32(AddVar::<f32> { label, value: self })
+    }
+
+    fn add_ranged_var_message(self, label: String, min_max: (f32, f32)) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddRangedVarF32(AddRangedVar::<f32> {
+            label,
+            min_max,
+            value: self,
+        })
+    }
+
+    fn update_range_value_message(self, label: String) -> FromGuiLoopMessage {
+        FromGuiLoopMessage::UpdateRangedValueF32(UpdateRangedValue { label, value: self })
+    }
+}
+
+impl Number for f64 {
+    fn add_var_message(self, label: String) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddVarF64(AddVar::<f64> { label, value: self })
+    }
+
+    fn add_ranged_var_message(self, label: String, min_max: (f64, f64)) -> ToGuiLoopMessage {
+        ToGuiLoopMessage::AddRangedVarF64(AddRangedVar::<f64> {
+            label,
+            min_max,
+            value: self,
+        })
+    }
+
+    fn update_range_value_message(self, label: String) -> FromGuiLoopMessage {
+        FromGuiLoopMessage::UpdateRangedValueF64(UpdateRangedValue { label, value: self })
+    }
+}
 
 /// Message from  [super::manager::Manager] to [super::gui::GuiLoop], such as to add a component or
 /// widget.
-pub trait ToGuiLoopMessage: Send {
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ToGuiLoopMessage {
+    /// enum combobox
+    AddEnumStringRepr(AddEnumStringRepr),
+    /// button
+    AddButton(AddButton),
+    /// bool checkbox
+    AddVarBool(AddVar<bool>),
+    /// usize textbox
+    AddVarUSize(AddVar<usize>),
+    /// i32 textbox
+    AddVarI32(AddVar<i32>),
+    /// i64 textbox
+    AddVarI64(AddVar<i64>),
+    /// f32 textbox
+    AddVarF32(AddVar<f32>),
+    /// f64 textbox
+    AddVarF64(AddVar<f64>),
+    /// usize slider
+    AddRangedVarUSize(AddRangedVar<usize>),
+    /// i32 textbox
+    AddRangedVarI32(AddRangedVar<i32>),
+    /// i64 textbox
+    AddRangedVarI64(AddRangedVar<i64>),
+    /// f32 textbox
+    AddRangedVarF32(AddRangedVar<f32>),
+    /// f64 textbox
+    AddRangedVarF64(AddRangedVar<f64>),
+    /// 2d widget
+    AddWidget2(AddWidget2),
+    /// 3d widget
+    AddWidget3(AddWidget3),
+    /// place 3d entity
+    PlaceEntity3(PlaceEntity3),
+    /// delete component
+    DeleteComponent(DeleteComponent),
+    /// update pose of 3d entity
+    UpdateScenePoseEntity3(UpdateScenePoseEntity3),
+}
+
+impl ToGuiLoopMessage {
     /// How that component or widget shall be displayed.
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context);
+    pub fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+        use ToGuiLoopMessage::*;
+
+        match self {
+            AddEnumStringRepr(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddButton(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddVarBool(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddVarUSize(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddVarI32(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddVarI64(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddVarF32(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddVarF64(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddRangedVarUSize(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddRangedVarI32(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddRangedVarI64(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddRangedVarF32(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddRangedVarF64(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddWidget2(e) => {
+                e.update_gui(data, ctx);
+            }
+            AddWidget3(e) => {
+                e.update_gui(data, ctx);
+            }
+            PlaceEntity3(e) => {
+                e.update_gui(data, ctx);
+            }
+            DeleteComponent(e) => {
+                e.update_gui(data, ctx);
+            }
+            UpdateScenePoseEntity3(e) => {
+                e.update_gui(data, ctx);
+            }
+        }
+    }
 }
 
 /// Add an enum (as string representation) as combo box to side panel.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AddEnumStringRepr {
     /// The name of the enum.
     pub label: String,
@@ -527,8 +720,8 @@ pub struct AddEnumStringRepr {
     pub values: std::vec::Vec<String>,
 }
 
-impl ToGuiLoopMessage for AddEnumStringRepr {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl AddEnumStringRepr {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components.insert(
             self.label,
             Box::new(EnumStringRepr {
@@ -540,13 +733,14 @@ impl ToGuiLoopMessage for AddEnumStringRepr {
 }
 
 /// To add a button to side panel.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AddButton {
     /// The name of button.
     pub label: String,
 }
 
-impl ToGuiLoopMessage for AddButton {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl AddButton {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Button { pressed: false }));
     }
@@ -555,6 +749,7 @@ impl ToGuiLoopMessage for AddButton {
 /// Add bool (as checkbox) or numeric value (as read-only text box) to side panel.
 ///
 /// Also see [Var].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AddVar<T> {
     /// The name of variable.
     pub label: String,
@@ -562,15 +757,15 @@ pub struct AddVar<T> {
     pub value: T,
 }
 
-impl ToGuiLoopMessage for AddVar<bool> {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl AddVar<bool> {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Var::<bool> { value: self.value }));
     }
 }
 
-impl<T: Number> ToGuiLoopMessage for AddVar<T> {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl<T: Number> AddVar<T> {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Var::<T> { value: self.value }));
     }
@@ -579,6 +774,7 @@ impl<T: Number> ToGuiLoopMessage for AddVar<T> {
 /// Add a numeric value as a slider to side panel.
 ///
 /// Also see [RangedVar].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AddRangedVar<T> {
     /// Name of variable.
     pub label: String,
@@ -588,8 +784,8 @@ pub struct AddRangedVar<T> {
     pub min_max: (T, T),
 }
 
-impl<T: Number> ToGuiLoopMessage for AddRangedVar<T> {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl<T: Number> AddRangedVar<T> {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components.insert(
             self.label,
             Box::new(RangedVar::<T> {
@@ -600,34 +796,48 @@ impl<T: Number> ToGuiLoopMessage for AddRangedVar<T> {
     }
 }
 
+/// u8 RGBA image
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ImageRgba8 {
+    /// raw bytes
+    pub bytes: Vec<u8>,
+    /// image width
+    pub width: u32,
+    /// image height
+    pub height: u32,
+}
+
 /// Adds [Widget2] to main panel.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AddWidget2 {
     /// Name of widget
     pub label: String,
     /// Image to show in (background of) widget
-    pub image: image::DynamicImage,
+    pub image: ImageRgba8,
 }
 
-impl ToGuiLoopMessage for AddWidget2 {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+impl AddWidget2 {
+    fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
         data.widgets
             .insert(self.label, Box::new(Widget2::from_image(ctx, self.image)));
     }
 }
 
 /// Adds [Widget3] to main panel.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AddWidget3 {
     /// Name of widget
     pub label: String,
 }
 
-impl ToGuiLoopMessage for AddWidget3 {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+impl AddWidget3 {
+    fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
         data.widgets.insert(self.label, Box::new(Widget3::new(ctx)));
     }
 }
 
 /// Place [super::entities::Entity3] in corresponding [Widget3].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PlaceEntity3 {
     /// Name of widget.
     pub widget_label: String,
@@ -635,8 +845,8 @@ pub struct PlaceEntity3 {
     pub named_entity: entities::NamedEntity3,
 }
 
-impl ToGuiLoopMessage for PlaceEntity3 {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl PlaceEntity3 {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.widgets
             .get_mut(&self.widget_label)
             .unwrap()
@@ -650,6 +860,7 @@ impl ToGuiLoopMessage for PlaceEntity3 {
 /// Updates pose of [super::entities::Entity3] in corresponding [Widget3].
 ///
 /// It is no-op, if an entity with that name `entity_label` does not exist.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateScenePoseEntity3 {
     /// Name of widget.
     pub widget_label: String,
@@ -659,8 +870,8 @@ pub struct UpdateScenePoseEntity3 {
     pub scene_pose_entity: nalgebra::Isometry3<f32>,
 }
 
-impl ToGuiLoopMessage for UpdateScenePoseEntity3 {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl UpdateScenePoseEntity3 {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         let maybe_entity = data
             .widgets
             .get_mut(&self.widget_label)
@@ -678,26 +889,64 @@ impl ToGuiLoopMessage for UpdateScenePoseEntity3 {
 }
 
 /// Delete that component from side panel.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DeleteComponent {
     /// Name/identifier of component
     pub label: String,
 }
 
-impl ToGuiLoopMessage for DeleteComponent {
-    fn update_gui(self: Box<Self>, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
+impl DeleteComponent {
+    fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components.remove(&self.label);
     }
 }
 
 /// Message from [super::gui::GuiLoop] to [super::manager::Manager].
-pub trait FromGuiLoopMessage: Send {
+#[derive(Serialize, Deserialize, Debug)]
+pub enum FromGuiLoopMessage {
+    /// enum combobox update
+    UpdateEnumStringRepr(UpdateEnumStringRepr),
+    /// bool checkbox update
+    UpdateValueBool(UpdateValue<bool>),
+    /// usize slider update
+    UpdateRangedValueUSize(UpdateRangedValue<usize>),
+    /// i32 slider update
+    UpdateRangedValueI32(UpdateRangedValue<i32>),
+    /// i64 slider update
+    UpdateRangedValueI64(UpdateRangedValue<i64>),
+    /// f32 slider update
+    UpdateRangedValueF32(UpdateRangedValue<f32>),
+    /// f64 slider update
+    UpdateRangedValueF64(UpdateRangedValue<f64>),
+    /// button update
+    UpdateButton(UpdateButton),
+}
+
+impl FromGuiLoopMessage {
     /// How to update the state given user interactions (button presses etc.).
-    fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>);
+    pub fn update(
+        &self,
+        components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>,
+    ) {
+        use FromGuiLoopMessage::*;
+
+        match self {
+            UpdateEnumStringRepr(e) => e.update(components),
+            UpdateValueBool(e) => e.update(components),
+            UpdateRangedValueUSize(e) => e.update(components),
+            UpdateRangedValueI32(e) => e.update(components),
+            UpdateRangedValueI64(e) => e.update(components),
+            UpdateRangedValueF32(e) => e.update(components),
+            UpdateRangedValueF64(e) => e.update(components),
+            UpdateButton(e) => e.update(components),
+        }
+    }
 }
 
 /// [super::manager::UiEnum]  (i.e. slider) update.
 ///
 /// See also [EnumStringRepr].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateEnumStringRepr {
     /// The name.
     pub label: String,
@@ -705,7 +954,7 @@ pub struct UpdateEnumStringRepr {
     pub value: String,
 }
 
-impl FromGuiLoopMessage for UpdateEnumStringRepr {
+impl UpdateEnumStringRepr {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
@@ -719,6 +968,7 @@ impl FromGuiLoopMessage for UpdateEnumStringRepr {
 /// [Var] update.
 ///
 /// See also [super::manager::UiVar].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateValue<T> {
     /// The name.
     pub label: String,
@@ -726,7 +976,7 @@ pub struct UpdateValue<T> {
     pub value: T,
 }
 
-impl FromGuiLoopMessage for UpdateValue<bool> {
+impl UpdateValue<bool> {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
@@ -740,6 +990,7 @@ impl FromGuiLoopMessage for UpdateValue<bool> {
 /// [RangedVar] (slider) update.
 ///
 /// See also [super::manager::UiRangedVar].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateRangedValue<T> {
     /// The name.
     pub label: String,
@@ -747,7 +998,7 @@ pub struct UpdateRangedValue<T> {
     pub value: T,
 }
 
-impl<T: Number> FromGuiLoopMessage for UpdateRangedValue<T> {
+impl<T: Number> UpdateRangedValue<T> {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
@@ -761,12 +1012,13 @@ impl<T: Number> FromGuiLoopMessage for UpdateRangedValue<T> {
 /// [Button] press event.
 ///
 /// See also [super::manager::UiButton].
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateButton {
     /// The name.
     pub label: String,
 }
 
-impl FromGuiLoopMessage for UpdateButton {
+impl UpdateButton {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
