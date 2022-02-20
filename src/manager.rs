@@ -387,10 +387,7 @@ impl UiWidget2 {
         if !shared.borrow().widgets2.contains_key(&label) {
             return None;
         }
-        Some(UiWidget2 {
-            label,
-            shared,
-        })
+        Some(UiWidget2 { label, shared })
     }
 
     fn place_image(&self, rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) {
