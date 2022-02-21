@@ -2,6 +2,8 @@
 
 use std::sync::mpsc;
 
+use crate::common::ToGuiLoopMessageTrait;
+
 use super::common;
 
 /// [super::common::Component]s of the side-panel and [super::common::Widget]s of the main panel.

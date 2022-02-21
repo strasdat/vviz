@@ -663,6 +663,7 @@ impl Number for f64 {
 /// Message from  [super::manager::Manager] to [super::gui::GuiLoop], such as to add a component or
 /// widget.
 #[derive(Serialize, Deserialize, Debug)]
+#[enum_dispatch::enum_dispatch]
 pub enum ToGuiLoopMessage {
     /// enum combobox
     AddEnumStringRepr(AddEnumStringRepr),
@@ -702,69 +703,74 @@ pub enum ToGuiLoopMessage {
     UpdateScenePoseEntity3(UpdateScenePoseEntity3),
 }
 
-impl ToGuiLoopMessage {
-    /// How that component or widget shall be displayed.
-    pub fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
-        use ToGuiLoopMessage::*;
-
-        match self {
-            AddEnumStringRepr(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddButton(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddVarBool(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddVarUSize(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddVarI32(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddVarI64(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddVarF32(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddVarF64(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddRangedVarUSize(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddRangedVarI32(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddRangedVarI64(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddRangedVarF32(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddRangedVarF64(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddWidget2(e) => {
-                e.update_gui(data, ctx);
-            }
-            AddWidget3(e) => {
-                e.update_gui(data, ctx);
-            }
-            PlaceEntity3(e) => {
-                e.update_gui(data, ctx);
-            }
-            DeleteComponent(e) => {
-                e.update_gui(data, ctx);
-            }
-            UpdateScenePoseEntity3(e) => {
-                e.update_gui(data, ctx);
-            }
-        }
-    }
+#[enum_dispatch::enum_dispatch(ToGuiLoopMessage)]
+pub trait ToGuiLoopMessageTrait {
+    fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context);
 }
+
+// impl ToGuiLoopMessage {
+//     /// How that component or widget shall be displayed.
+//     pub fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+//         use ToGuiLoopMessage::*;
+
+//         match self {
+//             AddEnumStringRepr(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddButton(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddVarBool(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddVarUSize(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddVarI32(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddVarI64(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddVarF32(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddVarF64(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddRangedVarUSize(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddRangedVarI32(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddRangedVarI64(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddRangedVarF32(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddRangedVarF64(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddWidget2(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             AddWidget3(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             PlaceEntity3(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             DeleteComponent(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//             UpdateScenePoseEntity3(e) => {
+//                 e.update_gui(data, ctx);
+//             }
+//         }
+//     }
+// }
 
 /// Add an enum (as string representation) as combo box to side panel.
 #[derive(Serialize, Deserialize, Debug)]
@@ -777,7 +783,7 @@ pub struct AddEnumStringRepr {
     pub values: std::vec::Vec<String>,
 }
 
-impl AddEnumStringRepr {
+impl ToGuiLoopMessageTrait for AddEnumStringRepr {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components.insert(
             self.label,
@@ -796,7 +802,7 @@ pub struct AddButton {
     pub label: String,
 }
 
-impl AddButton {
+impl ToGuiLoopMessageTrait for AddButton {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Button { pressed: false }));
@@ -814,14 +820,14 @@ pub struct AddVar<T> {
     pub value: T,
 }
 
-impl AddVar<bool> {
+impl ToGuiLoopMessageTrait for AddVar<bool> {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Var::<bool> { value: self.value }));
     }
 }
 
-impl<T: Number> AddVar<T> {
+impl<T: Number> ToGuiLoopMessageTrait for AddVar<T> {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components
             .insert(self.label, Box::new(Var::<T> { value: self.value }));
@@ -841,7 +847,7 @@ pub struct AddRangedVar<T> {
     pub min_max: (T, T),
 }
 
-impl<T: Number> AddRangedVar<T> {
+impl<T: Number> ToGuiLoopMessageTrait for AddRangedVar<T> {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components.insert(
             self.label,
@@ -890,7 +896,7 @@ pub struct TryUpdateImage {
    pub image: ImageRgba8,
 }
 
-impl AddWidget2 {
+impl ToGuiLoopMessageTrait for AddWidget2 {
     fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
         panic!("implement me!");
         // data.widgets
@@ -905,7 +911,7 @@ pub struct AddWidget3 {
     pub label: String,
 }
 
-impl AddWidget3 {
+impl ToGuiLoopMessageTrait for AddWidget3 {
     fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
         data.widgets.insert(self.label, Box::new(Widget3::new(ctx)));
     }
@@ -920,7 +926,7 @@ pub struct PlaceEntity3 {
     pub named_entity: entities::NamedEntity3,
 }
 
-impl PlaceEntity3 {
+impl ToGuiLoopMessageTrait for PlaceEntity3 {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.widgets
             .get_mut(&self.widget_label)
@@ -945,7 +951,7 @@ pub struct UpdateScenePoseEntity3 {
     pub scene_pose_entity: nalgebra::Isometry3<f32>,
 }
 
-impl UpdateScenePoseEntity3 {
+impl ToGuiLoopMessageTrait for UpdateScenePoseEntity3 {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         let maybe_entity = data
             .widgets
@@ -970,7 +976,7 @@ pub struct DeleteComponent {
     pub label: String,
 }
 
-impl DeleteComponent {
+impl ToGuiLoopMessageTrait for DeleteComponent {
     fn update_gui(self, data: &mut gui::GuiData, _ctx: &mut miniquad::Context) {
         data.components.remove(&self.label);
     }

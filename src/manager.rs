@@ -603,13 +603,11 @@ impl Manager {
     /// main panel.
     pub fn get_widget2(&self, label: String, proj: common::WidgetProjection) -> UiWidget2 {
         let maybe_w2 = UiWidget2::try_get(self.shared.clone(), label.clone());
-        let w2 = if let Some(value) = maybe_w2 {
+        if let Some(value) = maybe_w2 {
             value
         } else {
             UiWidget2::new(self.shared.clone(), label, proj)
-        };
-        //w2.place_image(image);
-        w2
+        }
     }
 
     pub fn place_image(
