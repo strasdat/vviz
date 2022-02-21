@@ -398,11 +398,9 @@ impl UiWidget2 {
         Some(UiWidget2 { label, shared })
     }
 
-    fn clear_and_update_projection(&self,  proj: common::WidgetProjection) {
+    fn clear_and_update_projection(&self, proj: common::WidgetProjection) {}
 
-    }
-
-    fn update_image(&self, rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) {
+    fn update_image(&self, rgba8: ImageRgba8) {
         // self.shared.borrow_mut().message_queue.push_back(
         //     ToGuiLoopMessage::ClearWidget2UpdateProjectionAndImage(
         //         common::ClearWidget2UpdateProjectionAndImage {
@@ -603,11 +601,7 @@ impl Manager {
     ///
     /// If a 2d widget with `label` does not exist yet, a new one is placed on the
     /// main panel.
-    pub fn get_widget2(
-        &self,
-        label: String,
-        proj: common::WidgetProjection,
-    ) -> UiWidget2 {
+    pub fn get_widget2(&self, label: String, proj: common::WidgetProjection) -> UiWidget2 {
         let maybe_w2 = UiWidget2::try_get(self.shared.clone(), label.clone());
         let w2 = if let Some(value) = maybe_w2 {
             value
@@ -618,11 +612,23 @@ impl Manager {
         w2
     }
 
-    pub fn place_image(&self,
+    pub fn place_image(
+        &self,
         label: String,
-        image: ImageRgba8) {
-        let w2 = self.get_widget2(),
-    }   
+        rgba8: ImageRgba8,
+        proj: common::WidgetProjection,
+    ) -> UiWidget2 {
+        assert_eq!(rgba8.image_size, proj.camera.image_size);
+        let maybe_w2 = UiWidget2::try_get(self.shared.clone(), label.clone());
+        let w2 = if let Some(value) = maybe_w2 {
+            value
+        } else {
+            UiWidget2::new(self.shared.clone(), label, proj.clone())
+        };
+        w2.clear_and_update_projection(proj);
+        w2.update_image(rgba8);
+        w2
+    }
 
     /// Adds a new 3d widget to the main panel.
     pub fn add_widget3(&self, label: String) -> UiWidget3 {

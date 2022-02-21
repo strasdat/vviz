@@ -6,7 +6,7 @@ use super::gui;
 use ::slice_of_array::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ImageSize {
     pub width: i64,
     pub height: i64,   
@@ -18,7 +18,7 @@ impl Default for ImageSize {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PinholeCamera {
     pub image_size: ImageSize,
     pub focal_length: f32,
@@ -44,7 +44,7 @@ impl Default for PinholeCamera {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClippingPlanes {
     pub near: f32,
     pub far: f32,
@@ -56,7 +56,7 @@ impl Default for ClippingPlanes {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WidgetProjection {
     pub camera : PinholeCamera,
     pub clipping_planes: ClippingPlanes,
@@ -278,12 +278,12 @@ impl Widget2 {
     fn from_image(ctx: &mut miniquad::Context, rgba8: ImageRgba8) -> Self {
         let tex = miniquad::Texture::from_rgba8(
             ctx,
-            rgba8.width as u16,
-            rgba8.height as u16,
+            rgba8.image_size.width as u16,
+            rgba8.image_size.height as u16,
             rgba8.bytes.as_slice(),
         );
         Self {
-            aspect_ratio: rgba8.width as f32 / rgba8.height as f32,
+            aspect_ratio: rgba8.image_size.width as f32 / rgba8.image_size.height as f32,
             maybe_image: Some(tex),
         }
     }
@@ -858,10 +858,8 @@ impl<T: Number> AddRangedVar<T> {
 pub struct ImageRgba8 {
     /// raw bytes
     pub bytes: Vec<u8>,
-    /// image width
-    pub width: u32,
-    /// image height
-    pub height: u32,
+    /// image size
+    pub image_size: ImageSize,
 }
 
 /// Adds [Widget2] to main panel.
@@ -894,8 +892,9 @@ pub struct TryUpdateImage {
 
 impl AddWidget2 {
     fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
-        data.widgets
-            .insert(self.label, Box::new(Widget2::from_image(ctx, self.image)));
+        panic!("implement me!");
+        // data.widgets
+        //     .insert(self.label, Box::new(Widget2::from_image(ctx, self.image)));
     }
 }
 
