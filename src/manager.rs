@@ -403,18 +403,18 @@ impl UiWidget2 {
     fn clear_and_update_projection(&self, proj: common::WidgetProjection) {}
 
     fn update_image(&self, rgba8: ImageRgba8) {
-        // self.shared.borrow_mut().message_queue.push_back(
-        //     ToGuiLoopMessage::ClearWidget2UpdateProjectionAndImage(
-        //         common::ClearWidget2UpdateProjectionAndImage {
-        //             label: self.label.clone(),
-        //             image: common::ImageRgba8 {
-        //                 width: rgba8.width(),
-        //                 height: rgba8.height(),
-        //                 bytes: rgba8.into_raw(),
-        //             },
-        //         },
-        //     ),
-        // );
+        self.shared.borrow_mut().message_queue.push_back(
+            ToGuiLoopMessage::ClearWidget2AndUpdateProjection(
+                common::ClearWidget2AndUpdateProjection {
+                    label: self.label.clone(),
+                    image: common::ImageRgba8 {
+                        width: rgba8.width(),
+                        height: rgba8.height(),
+                        bytes: rgba8.into_raw(),
+                    },
+                },
+            ),
+        );
     }
 }
 
