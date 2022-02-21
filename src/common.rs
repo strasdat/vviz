@@ -984,6 +984,7 @@ impl ToGuiLoopMessageTrait for DeleteComponent {
 
 /// Message from [super::gui::GuiLoop] to [super::manager::Manager].
 #[derive(Serialize, Deserialize, Debug)]
+#[enum_dispatch::enum_dispatch]
 pub enum FromGuiLoopMessage {
     /// enum combobox update
     UpdateEnumStringRepr(UpdateEnumStringRepr),
@@ -1003,25 +1004,13 @@ pub enum FromGuiLoopMessage {
     UpdateButton(UpdateButton),
 }
 
-impl FromGuiLoopMessage {
+#[enum_dispatch::enum_dispatch(FromGuiLoopMessage)]
+pub trait FromGuiLoopMessageTrait {
     /// How to update the state given user interactions (button presses etc.).
-    pub fn update(
+    fn update(
         &self,
         components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>,
-    ) {
-        use FromGuiLoopMessage::*;
-
-        match self {
-            UpdateEnumStringRepr(e) => e.update(components),
-            UpdateValueBool(e) => e.update(components),
-            UpdateRangedValueUSize(e) => e.update(components),
-            UpdateRangedValueI32(e) => e.update(components),
-            UpdateRangedValueI64(e) => e.update(components),
-            UpdateRangedValueF32(e) => e.update(components),
-            UpdateRangedValueF64(e) => e.update(components),
-            UpdateButton(e) => e.update(components),
-        }
-    }
+    );
 }
 
 /// [super::manager::UiEnum]  (i.e. slider) update.
@@ -1035,7 +1024,7 @@ pub struct UpdateEnumStringRepr {
     pub value: String,
 }
 
-impl UpdateEnumStringRepr {
+impl FromGuiLoopMessageTrait for UpdateEnumStringRepr {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
@@ -1057,7 +1046,7 @@ pub struct UpdateValue<T> {
     pub value: T,
 }
 
-impl UpdateValue<bool> {
+impl FromGuiLoopMessageTrait for UpdateValue<bool> {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
@@ -1079,7 +1068,7 @@ pub struct UpdateRangedValue<T> {
     pub value: T,
 }
 
-impl<T: Number> UpdateRangedValue<T> {
+impl<T: Number> FromGuiLoopMessageTrait for UpdateRangedValue<T> {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)
@@ -1099,7 +1088,7 @@ pub struct UpdateButton {
     pub label: String,
 }
 
-impl UpdateButton {
+impl FromGuiLoopMessageTrait for UpdateButton {
     fn update(&self, components: &mut linked_hash_map::LinkedHashMap<String, Box<dyn Component>>) {
         components
             .get_mut(&self.label)

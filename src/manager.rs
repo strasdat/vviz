@@ -10,6 +10,8 @@ use crate::common::FromGuiLoopMessage;
 use crate::common::ImageRgba8;
 use crate::common::ToGuiLoopMessage;
 
+use crate::common::FromGuiLoopMessageTrait;
+
 use super::common;
 use super::entities;
 
