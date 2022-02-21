@@ -702,7 +702,9 @@ pub enum ToGuiLoopMessage {
     /// update pose of 3d entity
     UpdateScenePoseEntity3(UpdateScenePoseEntity3),
     ///
-    ClearWidget2AndUpdateProjection(ClearWidget2AndUpdateProjection)
+    ClearWidget2AndUpdateProjection(ClearWidget2AndUpdateProjection),
+    ///
+    TryUpdateImage(TryUpdateImage),
 }
 
 #[enum_dispatch::enum_dispatch(ToGuiLoopMessage)]
@@ -815,6 +817,14 @@ pub struct AddWidget2 {
     pub proj: WidgetProjection,
 }
 
+impl ToGuiLoopMessageTrait for AddWidget2 {
+    fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
+        panic!("implement me!");
+        // data.widgets
+        //     .insert(self.label, Box::new(Widget2::from_image(ctx, self.image)));
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClearWidget2AndUpdateProjection {
      /// Name of widget
@@ -842,7 +852,7 @@ pub struct TryUpdateImage {
    pub image: ImageRgba8,
 }
 
-impl ToGuiLoopMessageTrait for AddWidget2 {
+impl ToGuiLoopMessageTrait for TryUpdateImage {
     fn update_gui(self, data: &mut gui::GuiData, ctx: &mut miniquad::Context) {
         panic!("implement me!");
         // data.widgets

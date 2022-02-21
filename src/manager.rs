@@ -400,18 +400,23 @@ impl UiWidget2 {
         Some(UiWidget2 { label, shared })
     }
 
-    fn clear_and_update_projection(&self, proj: common::WidgetProjection) {}
-
-    fn update_image(&self, rgba8: ImageRgba8) {
+    fn clear_and_update_projection(&self, proj: common::WidgetProjection) {
         self.shared.borrow_mut().message_queue.push_back(
             ToGuiLoopMessage::ClearWidget2AndUpdateProjection(
                 common::ClearWidget2AndUpdateProjection {
                     label: self.label.clone(),
-                    image: common::ImageRgba8 {
-                        width: rgba8.width(),
-                        height: rgba8.height(),
-                        bytes: rgba8.into_raw(),
-                    },
+                    proj,
+                },
+            ),
+        );
+    }
+
+    fn update_image(&self, rgba8: ImageRgba8) {
+        self.shared.borrow_mut().message_queue.push_back(
+            ToGuiLoopMessage::TryUpdateImage(
+                common::TryUpdateImage {
+                    label: self.label.clone(),
+                    image: rgba8,
                 },
             ),
         );
