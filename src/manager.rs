@@ -7,6 +7,7 @@ use std::str::FromStr;
 use std::sync::mpsc;
 
 use crate::common::FromGuiLoopMessage;
+use crate::common::ImageRgba8;
 use crate::common::ToGuiLoopMessage;
 
 use super::common;
@@ -16,7 +17,7 @@ use super::entities;
 pub struct Shared {
     components: LinkedHashMap<String, Box<dyn common::Component>>,
     message_queue: std::collections::VecDeque<common::ToGuiLoopMessage>,
-    widgets2: std::collections::HashMap<String, ()>,
+    widgets2: std::collections::HashMap<String, common::WidgetProjection>,
 }
 
 impl Default for Shared {
@@ -371,15 +372,22 @@ pub struct UiWidget2 {
 }
 
 impl UiWidget2 {
-    fn new(shared: Rc<RefCell<Shared>>, label: String) -> Self {
+    fn new(shared: Rc<RefCell<Shared>>, label: String, proj: common::WidgetProjection) -> Self {
         if shared
             .borrow_mut()
             .widgets2
-            .insert(label.clone(), ())
+            .insert(label.clone(), proj.clone())
             .is_some()
         {
             panic!("A 2-widget with name {} exists already.", label);
         }
+        shared
+            .borrow_mut()
+            .message_queue
+            .push_back(ToGuiLoopMessage::AddWidget2(common::AddWidget2 {
+                label: label.clone(),
+                proj,
+            }));
         Self { label, shared }
     }
 
@@ -390,18 +398,23 @@ impl UiWidget2 {
         Some(UiWidget2 { label, shared })
     }
 
-    fn place_image(&self, rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) {
-        self.shared
-            .borrow_mut()
-            .message_queue
-            .push_back(ToGuiLoopMessage::AddWidget2(common::AddWidget2 {
-                label: self.label.clone(),
-                image: common::ImageRgba8 {
-                    width: rgba8.width(),
-                    height: rgba8.height(),
-                    bytes: rgba8.into_raw(),
-                },
-            }));
+    fn clear_and_update_projection(&self,  proj: common::WidgetProjection) {
+
+    }
+
+    fn update_image(&self, rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) {
+        // self.shared.borrow_mut().message_queue.push_back(
+        //     ToGuiLoopMessage::ClearWidget2UpdateProjectionAndImage(
+        //         common::ClearWidget2UpdateProjectionAndImage {
+        //             label: self.label.clone(),
+        //             image: common::ImageRgba8 {
+        //                 width: rgba8.width(),
+        //                 height: rgba8.height(),
+        //                 bytes: rgba8.into_raw(),
+        //             },
+        //         },
+        //     ),
+        // );
     }
 }
 
@@ -580,13 +593,9 @@ impl Manager {
     /// Adds a new 2d widget to the main panel.
     ///
     /// Panics if a 2d widget with `label` exist already.
-    pub fn add_widget2(
-        &self,
-        label: String,
-        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
-    ) -> UiWidget2 {
-        let w2 = UiWidget2::new(self.shared.clone(), label);
-        w2.place_image(image);
+    pub fn add_widget2(&self, label: String, proj: common::WidgetProjection) -> UiWidget2 {
+        let w2 = UiWidget2::new(self.shared.clone(), label, proj);
+        // w2.place_image(image);
         w2
     }
 
@@ -597,17 +606,23 @@ impl Manager {
     pub fn get_widget2(
         &self,
         label: String,
-        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
+        proj: common::WidgetProjection,
     ) -> UiWidget2 {
         let maybe_w2 = UiWidget2::try_get(self.shared.clone(), label.clone());
         let w2 = if let Some(value) = maybe_w2 {
             value
         } else {
-            UiWidget2::new(self.shared.clone(), label)
+            UiWidget2::new(self.shared.clone(), label, proj)
         };
-        w2.place_image(image);
+        //w2.place_image(image);
         w2
     }
+
+    pub fn place_image(&self,
+        label: String,
+        image: ImageRgba8) {
+        let w2 = self.get_widget2(),
+    }   
 
     /// Adds a new 3d widget to the main panel.
     pub fn add_widget3(&self, label: String) -> UiWidget3 {

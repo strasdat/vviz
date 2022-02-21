@@ -6,6 +6,63 @@ use super::gui;
 use ::slice_of_array::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ImageSize {
+    pub width: i64,
+    pub height: i64,   
+}
+
+impl Default for ImageSize {
+    fn default() -> Self {
+        ImageSize{width:640, height:480}
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PinholeCamera {
+    pub image_size: ImageSize,
+    pub focal_length: f32,
+    pub center: nalgebra::Vector2<f32>
+}
+
+impl PinholeCamera {
+     fn default_from_size(size: ImageSize) -> Self{
+         let w = size.width as f32;
+         let h = size.height as f32;
+        Self {
+            image_size: size,
+            focal_length: (w+h) * 0.25,
+            center: nalgebra::Vector2::new(0.5*w - 0.5,0.5*h - 0.5),
+        }
+    }
+}
+
+
+impl Default for PinholeCamera {
+    fn default() -> Self {
+        Self::default_from_size(ImageSize::default())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ClippingPlanes {
+    pub near: f32,
+    pub far: f32,
+}
+
+impl Default for ClippingPlanes {
+    fn default() -> Self {
+        Self{near: 0.01, far:100.0}
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WidgetProjection {
+    pub camera : PinholeCamera,
+    pub clipping_planes: ClippingPlanes,
+}
+
+
 /// Component such as a button or a slider.
 pub trait Component: downcast_rs::DowncastSync {
     /// How to display the component on the side panel.
@@ -813,7 +870,26 @@ pub struct AddWidget2 {
     /// Name of widget
     pub label: String,
     /// Image to show in (background of) widget
-    pub image: ImageRgba8,
+    pub proj: WidgetProjection,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ClearWidget2AndUpdateProjection {
+     /// Name of widget
+     pub label: String,
+    pub proj: WidgetProjection,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+/// Tries to update background image of width `label`.
+/// 
+/// This operation is no-op if
+///  - widget `label` does not exist,
+///  - image.image_size != widget.image_size
+pub struct TryUpdateImage {
+    /// Name of widget
+    pub label: String,
+   pub image: ImageRgba8,
 }
 
 impl AddWidget2 {
