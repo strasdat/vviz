@@ -14,8 +14,8 @@ Its core dependencies are [egui](https://github.com/emilk/egui) and
 ## Warning: Development halted
 
 This project is currently parked - I do not plan to continue development in the short term. It is 
-likely I will continue in a year or three - especially if Rust adoption coninues in similar rapid
-speed.
+likely I will continue in a year or three - especially if Rust adoption continues in similar rapid
+fashin.
 
 A few challenges I encountered with the current approach:
 
@@ -23,8 +23,7 @@ A few challenges I encountered with the current approach:
    stdweb seem to be less main stream than I thought, and egui and miniquad rely in a custom WASM build 
    scripts - which makes it much harder to depend on other libraries for the wasm build.
    https://github.com/not-fl3/macroquad/issues/212
- - Strangely, plotting point clouds seems tricky. 
-   https://github.com/not-fl3/miniquad/issues/258
+ - Strangely, plotting point clouds seems a little tricky...
    
 
 ## Getting started
