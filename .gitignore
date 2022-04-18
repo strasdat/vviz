@@ -1,0 +1,5 @@
+.vscode
+/target
+Cargo.lock
+log.txt
+book/book
