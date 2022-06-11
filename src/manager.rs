@@ -16,6 +16,7 @@ use super::entities;
 pub struct Shared {
     components: LinkedHashMap<String, Box<dyn common::Component>>,
     message_queue: std::collections::VecDeque<common::ToGuiLoopMessage>,
+    widgets2: std::collections::HashMap<String, ()>,
 }
 
 impl Default for Shared {
@@ -23,6 +24,7 @@ impl Default for Shared {
         Self {
             components: LinkedHashMap::new(),
             message_queue: std::collections::VecDeque::new(),
+            widgets2: std::collections::HashMap::new(),
         }
     }
 }
@@ -364,29 +366,42 @@ impl<T: common::Number> UiRangedVar<T> {
 
 /// 2d widget.
 pub struct UiWidget2 {
-    // label: String,
-// hared: Rc<RefCell<Shared>>,
+    label: String,
+    shared: Rc<RefCell<Shared>>,
 }
 
 impl UiWidget2 {
-    fn new(
-        shared: Rc<RefCell<Shared>>,
-        label: String,
-        rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
-    ) -> Self {
-        shared
+    fn new(shared: Rc<RefCell<Shared>>, label: String) -> Self {
+        if shared
+            .borrow_mut()
+            .widgets2
+            .insert(label.clone(), ())
+            .is_some()
+        {
+            panic!("A 2-widget with name {} exists already.", label);
+        }
+        Self { label, shared }
+    }
+
+    fn try_get(shared: Rc<RefCell<Shared>>, label: String) -> Option<UiWidget2> {
+        if !shared.borrow().widgets2.contains_key(&label) {
+            return None;
+        }
+        Some(UiWidget2 { label, shared })
+    }
+
+    fn place_image(&self, rgba8: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) {
+        self.shared
             .borrow_mut()
             .message_queue
             .push_back(ToGuiLoopMessage::AddWidget2(common::AddWidget2 {
-                label,
+                label: self.label.clone(),
                 image: common::ImageRgba8 {
                     width: rgba8.width(),
                     height: rgba8.height(),
                     bytes: rgba8.into_raw(),
                 },
             }));
-
-        Self {}
     }
 }
 
@@ -563,12 +578,35 @@ impl Manager {
     }
 
     /// Adds a new 2d widget to the main panel.
+    ///
+    /// Panics if a 2d widget with `label` exist already.
     pub fn add_widget2(
         &self,
         label: String,
         image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
     ) -> UiWidget2 {
-        UiWidget2::new(self.shared.clone(), label, image)
+        let w2 = UiWidget2::new(self.shared.clone(), label);
+        w2.place_image(image);
+        w2
+    }
+
+    /// Returns <UiWidget2> with `label`.
+    ///
+    /// If a 2d widget with `label` does not exist yet, a new one is placed on the
+    /// main panel.
+    pub fn get_widget2(
+        &self,
+        label: String,
+        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
+    ) -> UiWidget2 {
+        let maybe_w2 = UiWidget2::try_get(self.shared.clone(), label.clone());
+        let w2 = if let Some(value) = maybe_w2 {
+            value
+        } else {
+            UiWidget2::new(self.shared.clone(), label)
+        };
+        w2.place_image(image);
+        w2
     }
 
     /// Adds a new 3d widget to the main panel.
